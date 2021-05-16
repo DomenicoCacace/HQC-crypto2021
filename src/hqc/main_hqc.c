@@ -1,6 +1,6 @@
 #include <stdio.h>
-#include "api.h"
-#include "parameters.h"
+#include "../common/api.h"
+#include "../common/parameters.h"
 
 int main() {
 

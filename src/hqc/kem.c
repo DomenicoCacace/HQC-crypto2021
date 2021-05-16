@@ -3,14 +3,14 @@
  * @brief Implementation of api.h
  */
 
-#include "api.h"
+#include "../common/api.h"
 #include "hqc.h"
-#include "../lib/rng/rng.h"
-#include "parameters.h"
-#include "parsing.h"
-#include "../lib/hash/hash.h"
-#include "../lib/fips202/fips202.h"
-#include "vector.h"
+#include "../lib/rng.h"
+#include "../common/parameters.h"
+#include "../common/parsing.h"
+#include "../lib/hash.h"
+#include "../lib/fips202.h"
+#include "../common/vector.h"
 #include <stdint.h>
 #include <string.h>
 #ifdef VERBOSE

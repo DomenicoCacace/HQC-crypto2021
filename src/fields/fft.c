@@ -11,7 +11,7 @@
 
 #include "fft.h"
 #include "gf.h"
-#include "parameters.h"
+#include "../common/parameters.h"
 #include <stdint.h>
 #include <string.h>
 

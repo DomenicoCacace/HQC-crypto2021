@@ -3,10 +3,10 @@
  * Constant time implementation of Reed-Solomon codes
  */
 
-#include "fft.h"
-#include "gf.h"
+#include "../fields/fft.h"
+#include "../fields/gf.h"
 #include "reed_solomon.h"
-#include "parameters.h"
+#include "../common/parameters.h"
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
@@ -394,7 +394,7 @@ void reed_solomon_decode(uint64_t* msg, uint64_t* cdw) {
 	// Compute the error values
 	compute_error_values(error_values, z, error);
 
-	// Correct the errors
+    // Correct the errors
 	correct_errors(cdw_bytes, error_values);
 
 	// Retrieve the message from the decoded codeword

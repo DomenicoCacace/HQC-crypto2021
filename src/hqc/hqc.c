@@ -4,12 +4,12 @@
  */
 
 #include "hqc.h"
-#include "../lib/rng/rng.h"
-#include "gf2x.h"
-#include "parameters.h"
-#include "parsing.h"
-#include "code.h"
-#include "vector.h"
+#include "../lib/rng.h"
+#include "../fields/gf2x.h"
+#include "../common/parameters.h"
+#include "../common/parsing.h"
+#include "../codes/code.h"
+#include "../common/vector.h"
 #include <stdint.h>
 #ifdef VERBOSE
 #include <stdio.h>
@@ -164,11 +164,14 @@ void hqc_pke_decrypt(uint64_t *m, const uint64_t *u, const uint64_t *v, const un
 
 	#ifdef VERBOSE
 		printf("\n\nu: "); vect_print(u, VEC_N_SIZE_BYTES);
-		printf("\n\nv: "); vect_print(v, VEC_N1N2_SIZE_BYTES);
+        printf("\n\nv: "); vect_print(v, VEC_N1N2_SIZE_BYTES);
 		printf("\n\ny: "); vect_print_sparse(y, PARAM_OMEGA);
 		printf("\n\nv - u.y: "); vect_print(tmp2, VEC_N_SIZE_BYTES);
-	#endif
+        printf("\n\nHERE1");
+    #endif
 
-	// Compute m by decoding v - u.y
-	code_decode(m, tmp2);
+    // Compute m by decoding v - u.y
+    printf("\n\nHERE2");
+
+    code_decode(m, tmp2);
 }

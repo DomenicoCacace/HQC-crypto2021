@@ -3,7 +3,7 @@
  * @brief Implementation of vectors sampling and some utilities for the HQC scheme
  */
 
-#include "../lib/rng/rng.h"
+#include "../lib/rng.h"
 #include "parameters.h"
 #include "vector.h"
 #include <stdint.h>

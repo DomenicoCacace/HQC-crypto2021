@@ -3,7 +3,7 @@
  * @brief Functions to parse secret key, public key and ciphertext of the HQC scheme
  */
 
-#include "../lib/rng/rng.h"
+#include "../lib/rng.h"
 #include "parameters.h"
 #include "parsing.h"
 #include "vector.h"

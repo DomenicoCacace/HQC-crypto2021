@@ -9,8 +9,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "rng.h"
-#include "parameters.h"
+#include "../lib/rng/rng.h"
+#include "../common/parameters.h"
 
 #define	MAX_MARKER_LEN		50
 #define KAT_SUCCESS          0

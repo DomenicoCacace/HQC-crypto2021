@@ -58,7 +58,7 @@
 
 #if SECURITY_LEVEL == 128
 
-#define PARAM_N																17669
+#define PARAM_N									17669
 #define PARAM_N1                            	46
 #define PARAM_N2                            	384
 #define PARAM_N1N2                          	17664
@@ -73,7 +73,7 @@
 #define SHARED_SECRET_BYTES                 	CRYPTO_BYTES
 #define CIPHERTEXT_BYTES                    	CRYPTO_CIPHERTEXTBYTES
 
-#define UTILS_REJECTION_THRESHOLD             16767881
+#define UTILS_REJECTION_THRESHOLD               16767881
 #define VEC_N_SIZE_BYTES                    	CEIL_DIVIDE(PARAM_N, 8)
 #define VEC_K_SIZE_BYTES                    	PARAM_K
 #define VEC_N1_SIZE_BYTES                   	PARAM_N1
@@ -100,7 +100,7 @@
 
 #elif SECURITY_LEVEL == 192
 
-#define PARAM_N																35851
+#define PARAM_N									35851
 #define PARAM_N1                            	56
 #define PARAM_N2                            	640
 #define PARAM_N1N2                          	35840
@@ -115,7 +115,7 @@
 #define SHARED_SECRET_BYTES                 	CRYPTO_BYTES
 #define CIPHERTEXT_BYTES                    	CRYPTO_CIPHERTEXTBYTES
 
-#define UTILS_REJECTION_THRESHOLD             16742417
+#define UTILS_REJECTION_THRESHOLD               16742417
 #define VEC_N_SIZE_BYTES                    	CEIL_DIVIDE(PARAM_N, 8)
 #define VEC_K_SIZE_BYTES                    	PARAM_K
 #define VEC_N1_SIZE_BYTES                   	PARAM_N1
@@ -139,10 +139,10 @@
 #define SHA512_BYTES                        	64
 #define SEED_BYTES                          	40
 #define SEEDEXPANDER_MAX_LENGTH             	4294967295
-
++
 #elif SECURITY_LEVEL == 256
 
-#define PARAM_N																57637
+#define PARAM_N									57637
 #define PARAM_N1                            	90
 #define PARAM_N2                            	640
 #define PARAM_N1N2                          	57600
@@ -157,7 +157,7 @@
 #define SHARED_SECRET_BYTES                 	CRYPTO_BYTES
 #define CIPHERTEXT_BYTES                    	CRYPTO_CIPHERTEXTBYTES
 
-#define UTILS_REJECTION_THRESHOLD             16772367
+#define UTILS_REJECTION_THRESHOLD               16772367
 #define VEC_N_SIZE_BYTES                    	CEIL_DIVIDE(PARAM_N, 8)
 #define VEC_K_SIZE_BYTES                    	PARAM_K
 #define VEC_N1_SIZE_BYTES                   	PARAM_N1

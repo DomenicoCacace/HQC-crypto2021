@@ -4,8 +4,8 @@
  */
 
 #include "gf2x.h"
-#include "../lib/rng/rng.h"
-#include "parameters.h"
+#include "../lib/rng.h"
+#include "../common/parameters.h"
 #include <stdint.h>
 #include <string.h>
 

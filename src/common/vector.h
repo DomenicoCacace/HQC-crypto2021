@@ -6,7 +6,7 @@
  * @brief Header file for vector.c
  */
 
-#include "../lib/rng/rng.h"
+#include "../lib/rng.h"
 #include <stdint.h>
 
 void vect_set_random_fixed_weight_by_coordinates(AES_XOF_struct *ctx, uint32_t *v, uint16_t weight);

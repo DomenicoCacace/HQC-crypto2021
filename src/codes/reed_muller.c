@@ -7,7 +7,7 @@
 #undef ALIGNVECTORS
 
 #include "reed_muller.h"
-#include "parameters.h"
+#include "../common/parameters.h"
 #include <stdint.h>
 #include <string.h>
 

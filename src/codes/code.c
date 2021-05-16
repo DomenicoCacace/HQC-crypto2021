@@ -6,12 +6,12 @@
 #include "code.h"
 #include "reed_muller.h"
 #include "reed_solomon.h"
-#include "parameters.h"
+#include "../common/parameters.h"
 #include <stdint.h>
 #include <string.h>
 #ifdef VERBOSE
 #include <stdio.h>
-#include "vector.h"
+#include "../common/vector.h"
 #endif
 
 
@@ -49,7 +49,7 @@ void code_decode(uint64_t *m, const uint64_t *em) {
 	uint64_t tmp[VEC_N1_SIZE_64] = {0};
 
 	reed_muller_decode(tmp, em);
-	reed_solomon_decode(m, tmp);
+    reed_solomon_decode(m, tmp);
 
 
 	#ifdef VERBOSE
