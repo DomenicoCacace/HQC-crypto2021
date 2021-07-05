@@ -46,7 +46,7 @@ Three parameters sets denoted respectively HQC-128, HQC-192, and HQC-256 are pro
 
 2.1 Requirements
 
-The following softwares and libraries are required: make, gcc and openssl.
+The following softwares and libraries are required: make and gcc.
 
 2.2 Compilation Step
 
@@ -63,9 +63,9 @@ differents ways:
 2.3 Compilation Step - HQC
 
 During compilation, the following files are created inside the bin/build folder:
-- hash.o: A wrapper around openssl SHA512 implementation
-- fips202.o: Hash function SHA3-512
-- rng.o: NIST rng
+- fips202.o: Hash function SHA3
+- shake_ds.o: Functions to perform domain separation based on SHAKE256
+- shake_prng.o: Functions to generate random values based on SHAKE256
 - parsing.o: Functions to parse public key, secret key and ciphertext of the
 - gf2x.o: Function to multiply polynomials.
 - vector.o: Functions to manipulate vectors.
@@ -96,13 +96,13 @@ The following softwares are required: doxygen and bibtex.
 
 4.1 Implementation overview - HQC
 
-The HQC_KEM IND-CCA2 scheme is defined in the api.h and parameters.h files and implemented in kem.c. The latter is based on the HQC_PKE IND-CPA scheme that is defined in hqc.h and implemented in hqc.c. The HQC_PKE IND-CPA scheme uses Concatenated codes (see code.h and code.c) which is the combination of Reed-Solomon codes (see reed_solomon.h and reed_solomon.c) and Reed-Muller codes [5] (see reed_muller.h and reed_muller.c). Roots computation for Reed-Solomon codes is done by additive Fast Fourier Transform [3] [4] (see fft.h and fft.c). Files gf.h and gf.c provide the implementation of the underlying Galois field. The files gf2x.c and gf2x.h provide the function performing the multiplication of two polynomials. As public key, secret key and ciphertext can be manipulated either with their mathematical representations or as bit strings, the files parsing.h and parsing.c provide functions to switch between these two representations. Finally, the files hash.h, fips202.h rng.h, hash.c, fips202.c and rng.c (inside the lib/ folder) contain respectively a wrapper around OpenSSL SHA512 implementation, an implementation of SHA3-512 and the NIST random functions.
+The HQC_KEM IND-CCA2 scheme is defined in the api.h and parameters.h files and implemented in kem.c. The latter is based on the HQC_PKE IND-CPA scheme that is defined in hqc.h and implemented in hqc.c. The HQC_PKE IND-CPA scheme uses Concatenated codes (see code.h and code.c) which is the combination of Reed-Solomon codes (see reed_solomon.h and reed_solomon.c) and Reed-Muller codes [5] (see reed_muller.h and reed_muller.c). Roots computation for Reed-Solomon codes is done by additive Fast Fourier Transform [3] [4] (see fft.h and fft.c). Files gf.h and gf.c provide the implementation of the underlying Galois field. The files gf2x.c and gf2x.h provide the function performing the multiplication of two polynomials. As public key, secret key and ciphertext can be manipulated either with their mathematical representations or as bit strings, the files parsing.h and parsing.c provide functions to switch between these two representations. The files shake_ds.h and shake_ds.c provide functions to perfom domain separation based on SHAKE256. The file domains.h contains SHAKE-256 domains separation. Random values needed for the scheme are provided by functions in files shake_prng.c and shake_prng.h. Finally, the files fips202.h and fips202.c (inside the lib/fips202 folder) contain an implementation of SHA3.
 
 4.2 Public key, secret key, ciphertext and shared secret
 
 The public key, secret key and ciphertext are respectively composed of the
 vectors (h, s), (x, y) and (u, v, d). The shared secret is the output of the
-hash of m using SHA512. In order to shorten the keys, the public key is stored
+hash of m using SHAKE256. In order to shorten the keys, the public key is stored
 as (seed1, s) and the secret key is stored as (seed2). To this end, the seed
 expander provided by the NIST was used along with 40 bytes long seeds.
 

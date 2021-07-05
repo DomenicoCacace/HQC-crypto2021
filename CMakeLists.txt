@@ -18,11 +18,8 @@ set(SOURCES ${BASE_DIR}/codes/code.c
 			${BASE_DIR}/codes/reed_solomon.c
 			${BASE_DIR}/common/vector.c
 			${BASE_DIR}/lib/fips202.c
-			${BASE_DIR}/lib/hash.c
-			${BASE_DIR}/lib/rng.c)
-
-set_source_files_properties(${BASE_DIR}/lib/rng.c PROPERTIES COMPILE_FLAGS ${CMAKE_C_FLAGS_RNG})
-
+			${BASE_DIR}/lib/shake_ds.c
+			${BASE_DIR}/lib/shake_prng.c)
 
 set(HEADERS ${BASE_DIR}/codes/code.h
 			${BASE_DIR}/fields/fft.h
@@ -33,15 +30,15 @@ set(HEADERS ${BASE_DIR}/codes/code.h
 			${BASE_DIR}/codes/reed_muller.h
 			${BASE_DIR}/codes/reed_solomon.h
 			${BASE_DIR}/common/vector.h
+			${BASE_DIR}/lib/domains.h
 			${BASE_DIR}/lib/fips202.h
-			${BASE_DIR}/lib/hash.h
-			${BASE_DIR}/lib/rng.h)
+			${BASE_DIR}/lib/shake_ds.h
+			${BASE_DIR}/lib/shake_prng.h)
 
 
 
 
 add_executable(hqc-${SECLVL} ${HEADERS} ${SOURCES} ${BASE_DIR}/hqc/main_hqc.c)
-target_link_libraries(hqc-${SECLVL} PUBLIC crypto)
 set_property(TARGET hqc-${SECLVL} APPEND PROPERTY COMPILE_FLAGS "-DSECURITY_LEVEL=${SECLVL} -DVERBOSE=1")
 
 

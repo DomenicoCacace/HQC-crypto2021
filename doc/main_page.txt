@@ -26,7 +26,7 @@
  *
  *  <h3>2.1 Requirements</h3>
  *
- *  The following softwares and libraries are required: <b>make</b>, <b>gcc</b>, and <b>openssl</b>.
+ *  The following softwares and libraries are required: <b>make</b> and <b>gcc</b>.
  *
  *  <h3>2.2 Compilation Step</h3>
  *
@@ -36,9 +36,9 @@
  *  - Execute <b>make hqcX-verbose</b> to compile a working example of the scheme in verbose mode. Run <b>bin/hqcX-verbose</b> to generate intermediate values.
  *
  *  During compilation, the following files are created inside the <b>bin/build</b> folder:
- *  - <b>hash.o</b>: A wrapper around openssl SHA512 implementation
- *  - <b>fips202.o</b>: Hash function SHA3-512
- *  - <b>rng.o</b>: NIST rng
+ *  - <b>fips202.o</b>: Hash function SHA3
+ *  - <b>shake_ds.o</b>: Functions to perform domain separation based on SHAKE256
+ *  - <b>shake_prng.o</b>: Functions to generate random values based on SHAKE256
  *  - <b>parsing.o</b>: Functions to parse public key, secret key and ciphertext of the scheme.
  *  - <b>gf2x.o</b>: Function to multiply polynomials.
  *  - <b>vector.o</b>: Functions to manipulate vectors.
@@ -79,12 +79,13 @@
  *  Files gf.h and gf.c provide the implementation of the underlying Galois field.
  *  The files gf2x.c and gf2x.h provide the function performing the multiplication of two polynomials.
  *  As public key, secret key and ciphertext can be manipulated either with their mathematical representations or as bit strings, the files parsing.h and parsing.c provide functions to switch between these two representations.
- *  Finally, the files <b>hash.h</b>, <b>fips202.h</b>, <b>rng.h</b>, <b>hash.c</b>, <b>fips202.c</b> and <b>rng.c</b> (inside the <b>lib/</b> folder) contain respectively a wrapper around OpenSSL SHA512 implementation, SHA3-512 implementation and the NIST random functions.
+ *  The files <b>shake_ds.h</b> and <b>shake_ds.c</b> provide functions to perfom domain separation based on SHAKE256. The file <b>domains.h</b> contains SHAKE-256 domains separation.
+ * Random values needed for the scheme are provided by functions in files <b>shake_prng.h</b> and <b>shake_prng.c</b>. Finally, the files <b>fips202.h</b> and <b>fips202.c</b> (inside the <b>lib/fips202</b> folder) contain an implementation of SHA3.
  *
  *  <h3>4.2 Public key, secret key, ciphertext and shared secret</h3>
  *
  *  The public key, secret key and ciphertext are respectively composed of (<b>h</b>, <b>s</b>), (<b>x</b>, <b>y</b>) and (<b>u</b>, <b>v</b>, <b>d</b>).
- *  The shared secret is the output of the hash of <b>m</b>, <b>u</b> and <b>v</b> using SHA512.
+ *  The shared secret is the output of the hash of <b>m</b>, <b>u</b> and <b>v</b> using SHAKE256.
  *  In order to shorten the keys, the public key is stored as (<b>seed1</b>, <b>s</b>) and the secret key is stored as (<b>seed2</b>).
  *  To this end, the seed expander provided by the NIST was used along with 40 bytes long seeds.
  *

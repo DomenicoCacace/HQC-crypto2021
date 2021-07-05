@@ -3,12 +3,13 @@
  * @brief Functions to parse secret key, public key and ciphertext of the HQC scheme
  */
 
-#include "../lib/rng.h"
+#include <stdint.h>
+#include <string.h>
+
+#include "../lib/shake_prng.h"
 #include "parameters.h"
 #include "parsing.h"
 #include "vector.h"
-#include <stdint.h>
-#include <string.h>
 
 
 /**
@@ -22,9 +23,11 @@
  * @param[in] pk String containing the public key
  */
 void hqc_secret_key_to_string(uint8_t *sk, const uint8_t *sk_seed, const uint8_t *pk) {
-	memcpy(sk, sk_seed, SEED_BYTES);
-	memcpy(sk + SEED_BYTES, pk, PUBLIC_KEY_BYTES);
+    memcpy(sk, sk_seed, SEED_BYTES);
+    memcpy(sk + SEED_BYTES, pk, PUBLIC_KEY_BYTES);
 }
+
+
 
 /**
  * @brief Parse a secret key from a string
@@ -38,16 +41,18 @@ void hqc_secret_key_to_string(uint8_t *sk, const uint8_t *sk_seed, const uint8_t
  * @param[in] sk String containing the secret key
  */
 void hqc_secret_key_from_string(uint64_t *x, uint32_t *y, uint8_t *pk, const uint8_t *sk) {
-	AES_XOF_struct sk_seedexpander;
-	uint8_t sk_seed[SEED_BYTES] = {0};
+    seedexpander_state sk_seedexpander;
+    uint8_t sk_seed[SEED_BYTES] = {0};
 
-	memcpy(sk_seed, sk, SEED_BYTES);
-	seedexpander_init(&sk_seedexpander, sk_seed, sk_seed + 32, SEEDEXPANDER_MAX_LENGTH);
+    memcpy(sk_seed, sk, SEED_BYTES);
+    seedexpander_init(&sk_seedexpander, sk_seed, SEED_BYTES);
 
-	vect_set_random_fixed_weight(&sk_seedexpander, x, PARAM_OMEGA);
-	vect_set_random_fixed_weight_by_coordinates(&sk_seedexpander, y, PARAM_OMEGA);
-	memcpy(pk, sk + SEED_BYTES, PUBLIC_KEY_BYTES);
+    vect_set_random_fixed_weight(&sk_seedexpander, x, PARAM_OMEGA);
+    vect_set_random_fixed_weight_by_coordinates(&sk_seedexpander, y, PARAM_OMEGA);
+    memcpy(pk, sk + SEED_BYTES, PUBLIC_KEY_BYTES);
 }
+
+
 
 /**
  * @brief Parse a public key into a string
@@ -59,8 +64,8 @@ void hqc_secret_key_from_string(uint64_t *x, uint32_t *y, uint8_t *pk, const uin
  * @param[in] s uint8_t representation of vector s
  */
 void hqc_public_key_to_string(uint8_t *pk, const uint8_t *pk_seed, const uint64_t *s) {
-	memcpy(pk, pk_seed, SEED_BYTES);
-	memcpy(pk + SEED_BYTES, s, VEC_N_SIZE_BYTES);
+    memcpy(pk, pk_seed, SEED_BYTES);
+    memcpy(pk + SEED_BYTES, s, VEC_N_SIZE_BYTES);
 }
 
 
@@ -75,15 +80,16 @@ void hqc_public_key_to_string(uint8_t *pk, const uint8_t *pk_seed, const uint64_
  * @param[in] pk String containing the public key
  */
 void hqc_public_key_from_string(uint64_t *h, uint64_t *s, const uint8_t *pk) {
-	AES_XOF_struct pk_seedexpander;
-	uint8_t pk_seed[SEED_BYTES] = {0};
+    seedexpander_state pk_seedexpander;
+    uint8_t pk_seed[SEED_BYTES] = {0};
 
-	memcpy(pk_seed, pk, SEED_BYTES);
-	seedexpander_init(&pk_seedexpander, pk_seed, pk_seed + 32, SEEDEXPANDER_MAX_LENGTH);
-	vect_set_random(&pk_seedexpander, h);
+    memcpy(pk_seed, pk, SEED_BYTES);
+    seedexpander_init(&pk_seedexpander, pk_seed, SEED_BYTES);
+    vect_set_random(&pk_seedexpander, h);
 
-	memcpy(s, pk + SEED_BYTES, VEC_N_SIZE_BYTES);
+    memcpy(s, pk + SEED_BYTES, VEC_N_SIZE_BYTES);
 }
+
 
 
 /**
@@ -97,10 +103,11 @@ void hqc_public_key_from_string(uint64_t *h, uint64_t *s, const uint8_t *pk) {
  * @param[in] d String containing the hash d
  */
 void hqc_ciphertext_to_string(uint8_t *ct, const uint64_t *u, const uint64_t *v, const uint8_t *d) {
-	memcpy(ct, u, VEC_N_SIZE_BYTES);
-	memcpy(ct + VEC_N_SIZE_BYTES, v, VEC_N1N2_SIZE_BYTES);
-	memcpy(ct + VEC_N_SIZE_BYTES + VEC_N1N2_SIZE_BYTES, d, SHA512_BYTES);
+    memcpy(ct, u, VEC_N_SIZE_BYTES);
+    memcpy(ct + VEC_N_SIZE_BYTES, v, VEC_N1N2_SIZE_BYTES);
+    memcpy(ct + VEC_N_SIZE_BYTES + VEC_N1N2_SIZE_BYTES, d, SHAKE256_512_BYTES);
 }
+
 
 
 /**
@@ -114,7 +121,7 @@ void hqc_ciphertext_to_string(uint8_t *ct, const uint64_t *u, const uint64_t *v,
  * @param[in] ct String containing the ciphertext
  */
 void hqc_ciphertext_from_string(uint64_t *u, uint64_t *v, uint8_t *d, const uint8_t *ct) {
-	memcpy(u, ct, VEC_N_SIZE_BYTES);
-	memcpy(v, ct + VEC_N_SIZE_BYTES, VEC_N1N2_SIZE_BYTES);
-	memcpy(d, ct + VEC_N_SIZE_BYTES + VEC_N1N2_SIZE_BYTES, SHA512_BYTES);
+    memcpy(u, ct, VEC_N_SIZE_BYTES);
+    memcpy(v, ct + VEC_N_SIZE_BYTES, VEC_N1N2_SIZE_BYTES);
+    memcpy(d, ct + VEC_N_SIZE_BYTES + VEC_N1N2_SIZE_BYTES, SHAKE256_512_BYTES);
 }

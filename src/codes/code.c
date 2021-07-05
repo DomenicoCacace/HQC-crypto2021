@@ -3,15 +3,15 @@
  * @brief Implementation of concatenated code
  */
 
+#include <stdint.h>
+
 #include "code.h"
 #include "reed_muller.h"
 #include "reed_solomon.h"
-#include "../common/parameters.h"
-#include <stdint.h>
-#include <string.h>
+
 #ifdef VERBOSE
-#include <stdio.h>
-#include "../common/vector.h"
+    #include <stdio.h>
+#   include "../common/vector.h"
 #endif
 
 
