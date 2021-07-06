@@ -1,13 +1,48 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.6.0)
 
 project(HQC)
 
-set(CMAKE_C_FLAGS  "${CMAKE_C_FLAGS} -O3 -std=c99 -funroll-all-loops -flto -pedantic -Wall -Wextra")
-set(CMAKE_C_FLAGS_RNG "${CMAKE_C_FLAGS} -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-sign-compare")
+set(BASE_DIR ${CMAKE_CURRENT_LIST_DIR}/src)
+enable_language(C ASM)
+set(CMAKE_C_STANDARD 99)
+set(TARGET_NAME hqc-${SECLVL})
 
-set(BASE_DIR ./src)
+if(${CROSSCOMPILE} STREQUAL "1")
 
-set(SOURCES ${BASE_DIR}/codes/code.c
+	# Source and header files generated from STM32CubeMX
+	set(STM32_DIR ${BASE_DIR}/stm32)
+	set(CMSIS_DIR ${STM32_DIR}/driver/cmsis)
+	set(HAL_DIR ${STM32_DIR}/driver/hal)
+
+	AUX_SOURCE_DIRECTORY(${HAL_DIR}/library HAL_SOURCES)
+
+	set(SOURCES ${STM32_DIR}/stm32f4xx_hal_msp.c
+				${STM32_DIR}/stm32f4xx_it.c
+				${STM32_DIR}/syscalls.c
+				${STM32_DIR}/system_stm32f4xx.c
+				${STM32_DIR}/startup_stm32f401xe.s
+				${HAL_SOURCES})
+
+	# Set up the arm-none-eabi- toolchain to cross compile
+	set(CMAKE_SYSTEM_PROCESSOR ARM)
+	set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
+	set(CMAKE_C_COMPILER arm-none-eabi-gcc)
+	set(CMAKE_ASM_COMPILER ${CMAKE_C_COMPILER})
+
+	set(CMAKE_SYSROOT ${ARM_TOOLCHAIN_DIR}/../arm-none-eabi)
+	set(CMAKE_FIND_ROOT_PATH ${BINUTILS_PATH})
+	set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+	set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+	set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+
+	set(TARGET_NAME ${TARGET_NAME}-ARM)
+else()
+	set(CMAKE_C_COMPILER gcc)
+	set(TARGET_NAME ${TARGET_NAME}-x86_64)
+endif()
+
+set(SOURCES ${SOURCES}
+			${BASE_DIR}/codes/code.c
 			${BASE_DIR}/fields/fft.c
 			${BASE_DIR}/fields/gf.c
 			${BASE_DIR}/fields/gf2x.c
@@ -21,7 +56,8 @@ set(SOURCES ${BASE_DIR}/codes/code.c
 			${BASE_DIR}/lib/shake_ds.c
 			${BASE_DIR}/lib/shake_prng.c)
 
-set(HEADERS ${BASE_DIR}/codes/code.h
+set(HEADERS ${HEADERS}
+			${BASE_DIR}/codes/code.h
 			${BASE_DIR}/fields/fft.h
 			${BASE_DIR}/fields/gf.h
 			${BASE_DIR}/fields/gf2x.h
@@ -36,15 +72,52 @@ set(HEADERS ${BASE_DIR}/codes/code.h
 			${BASE_DIR}/lib/shake_prng.h)
 
 
+add_executable(${TARGET_NAME} ${HEADERS} ${SOURCES} ${BASE_DIR}/hqc/main_hqc.c)
+set_property(TARGET ${TARGET_NAME} APPEND PROPERTY COMPILE_FLAGS "-DSECURITY_LEVEL=${SECLVL} -DVERBOSE=${VERBOSE}")
 
+if(${CROSSCOMPILE} STREQUAL "1")
+	set_target_properties(${TARGET_NAME} PROPERTIES SUFFIX ".elf")
 
-add_executable(hqc-${SECLVL} ${HEADERS} ${SOURCES} ${BASE_DIR}/hqc/main_hqc.c)
-set_property(TARGET hqc-${SECLVL} APPEND PROPERTY COMPILE_FLAGS "-DSECURITY_LEVEL=${SECLVL} -DVERBOSE=1")
+	target_compile_definitions(${TARGET_NAME} PUBLIC
+			"__weak=__attribute__((weak))"
+			"__packed=__attribute__((__packed__))"
+			USE_HAL_DRIVER
+			STM32F401xE
+			)
 
+	target_compile_options(${TARGET_NAME} PUBLIC
+		-mcpu=cortex-m4
+		-mthumb
+		-mno-thumb-interwork
+		-mfpu=vfp
+		-msoft-float
+		-Wall
+		-ffunction-sections
+		-fdata-sections
+		-O3
+	)
 
+	set(LINKER_SCRIPT ${STM32_DIR}/STM32F401RETx_FLASH.ld)
 
-#add_executable(
-#	https://dev.to/younup/cmake-on-stm32-the-beginning-3766
-#	)
+	target_link_options(${TARGET_NAME} PUBLIC
+		-T ${LINKER_SCRIPT}
+		-specs=nosys.specs
+		-Wl,--gc-section
+		-mcpu=cortex-m4
+		-mthumb 
+	)
 
+	# Generate assembly listing.
+	add_custom_command(
+		TARGET ${TARGET_NAME}
+		COMMAND "arm-none-eabi-objdump"
+		ARGS "-S" "$<TARGET_FILE:${TARGET_NAME}>" ">>" "${TARGET_NAME}.lst"
+	)
+
+	# Flash firmware to target.
+	find_program(stm32programmer NAMES STM32_Programmer.sh STM32_Programmer_CLI PATHS "/opt/STMicroelectronics/STM32Cube/STM32CubeProgrammer/")
+	add_custom_target(flash
+		${stm32programmer} -c port=SWD -w "$<TARGET_FILE:${TARGET_NAME}>" -g
+		DEPENDS ${TARGET_NAME})
+endif()
 
