@@ -73,17 +73,22 @@ set(HEADERS ${HEADERS}
 
 
 add_executable(${TARGET_NAME} ${HEADERS} ${SOURCES} ${BASE_DIR}/hqc/main_hqc.c)
-set_property(TARGET ${TARGET_NAME} APPEND PROPERTY COMPILE_FLAGS "-DSECURITY_LEVEL=${SECLVL} -DVERBOSE=${VERBOSE}")
 
-if(${CROSSCOMPILE} STREQUAL "1")
+set(FLAGS -DSECURITY_LEVEL=${SECLVL})
+if(${VERBOSE} STREQUAL "1")
+	set(FLAGS "${FLAGS} -DVERBOSE")
+endif()
+
+set_property(TARGET ${TARGET_NAME} APPEND PROPERTY COMPILE_FLAGS ${FLAGS})
+
+	if(${CROSSCOMPILE} STREQUAL "1")
 	set_target_properties(${TARGET_NAME} PROPERTIES SUFFIX ".elf")
 
 	target_compile_definitions(${TARGET_NAME} PUBLIC
-			"__weak=__attribute__((weak))"
-			"__packed=__attribute__((__packed__))"
-			USE_HAL_DRIVER
-			STM32F401xE
-			)
+		"__weak=__attribute__((weak))"
+		"__packed=__attribute__((__packed__))"
+		USE_HAL_DRIVER
+		STM32F401xE)
 
 	target_compile_options(${TARGET_NAME} PUBLIC
 		-mcpu=cortex-m4
@@ -94,8 +99,7 @@ if(${CROSSCOMPILE} STREQUAL "1")
 		-Wall
 		-ffunction-sections
 		-fdata-sections
-		-O3
-	)
+		-O3)
 
 	set(LINKER_SCRIPT ${STM32_DIR}/STM32F401RETx_FLASH.ld)
 
@@ -111,13 +115,13 @@ if(${CROSSCOMPILE} STREQUAL "1")
 	add_custom_command(
 		TARGET ${TARGET_NAME}
 		COMMAND "arm-none-eabi-objdump"
-		ARGS "-S" "$<TARGET_FILE:${TARGET_NAME}>" ">>" "${TARGET_NAME}.lst"
-	)
+		ARGS "-S" "$<TARGET_FILE:${TARGET_NAME}>" ">>" "${TARGET_NAME}.lst")
 
 	# Flash firmware to target.
 	find_program(stm32programmer NAMES STM32_Programmer.sh STM32_Programmer_CLI PATHS "/opt/STMicroelectronics/STM32Cube/STM32CubeProgrammer/")
 	add_custom_target(flash
 		${stm32programmer} -c port=SWD -w "$<TARGET_FILE:${TARGET_NAME}>" -g
 		DEPENDS ${TARGET_NAME})
+
 endif()
 
