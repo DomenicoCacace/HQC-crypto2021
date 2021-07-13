@@ -69,19 +69,33 @@ set(HEADERS ${HEADERS}
 			${BASE_DIR}/lib/domains.h
 			${BASE_DIR}/lib/fips202.h
 			${BASE_DIR}/lib/shake_ds.h
-			${BASE_DIR}/lib/shake_prng.h)
+			${BASE_DIR}/lib/shake_prng.h
+			${BASE_DIR}/benchmarking/board_config.h)
 
-
-add_executable(${TARGET_NAME} ${HEADERS} ${SOURCES} ${BASE_DIR}/hqc/main_hqc.c)
+if(${MODE} STREQUAL "FUNCTIONAL")
+	add_executable(${TARGET_NAME} ${HEADERS} ${SOURCES} ${BASE_DIR}/benchmarking/functional_test.c)
+else()
+	error("PLEASE SPECIFY A TARGET")
+endif ()
 
 set(FLAGS -DSECURITY_LEVEL=${SECLVL})
+
+# Set the verbosity level
 if(${VERBOSE} STREQUAL "1")
-	set(FLAGS "${FLAGS} -DVERBOSE")
+	set(FLAGS "${FLAGS} -DDEBUG")
+elseif(${VERBOSE} STREQUAL "2")
+	set(FLAGS "${FLAGS} -DVERBOSE -DDEBUG")
 endif()
+
+# Toggle ARM configs
+if(${CROSSCOMPILE} STREQUAL "1")
+	set(FLAGS "${FLAGS} -DCROSSCOMPILE")
+endif()
+
 
 set_property(TARGET ${TARGET_NAME} APPEND PROPERTY COMPILE_FLAGS ${FLAGS})
 
-	if(${CROSSCOMPILE} STREQUAL "1")
+if(${CROSSCOMPILE} STREQUAL "1")
 	set_target_properties(${TARGET_NAME} PROPERTIES SUFFIX ".elf")
 
 	target_compile_definitions(${TARGET_NAME} PUBLIC
