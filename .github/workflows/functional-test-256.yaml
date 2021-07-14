@@ -1,0 +1,33 @@
+name: functional-test-256
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Configure CMake
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DSECLVL=256 -DMODE="FUNCTIONAL" -DCROSSCOMPILE=0 -DVERBOSE=0
+      
+    - name: make executable
+      run:  |
+        cd build/
+        make hqc-256-native
+    
+    - name: Execute functional test
+      run:  |
+        cd build/
+        chmod +x hqc-256-native
+        ./hqc-256-native
+      
