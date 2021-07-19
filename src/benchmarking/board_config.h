@@ -53,6 +53,14 @@
         }
     }
 
+    void ledOff() {
+        HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+    }
+
+    void ledOn() {
+        HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+    }
+ 
 
     /**
     * @brief System Clock Configuration

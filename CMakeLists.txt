@@ -39,6 +39,7 @@ if(${CROSSCOMPILE} STREQUAL "1")
 else()
 	set(CMAKE_C_COMPILER gcc)
 	set(TARGET_NAME ${TARGET_NAME}-native)
+	set(FLAGS "-Wall -pedantic -Wuninitialized -fno-var-tracking-assignments -march=native -O3 -g3 -Wno-unused-function")
 endif()
 
 set(SOURCES ${SOURCES}
@@ -70,15 +71,18 @@ set(HEADERS ${HEADERS}
 			${BASE_DIR}/lib/fips202.h
 			${BASE_DIR}/lib/shake_ds.h
 			${BASE_DIR}/lib/shake_prng.h
-			${BASE_DIR}/benchmarking/board_config.h)
+			${BASE_DIR}/benchmarking/board_config.h
+			${BASE_DIR}/benchmarking/timing_stats.h)
 
 if(${MODE} STREQUAL "FUNCTIONAL")
 	add_executable(${TARGET_NAME} ${HEADERS} ${SOURCES} ${BASE_DIR}/benchmarking/functional_test.c)
+elseif(${MODE} STREQUAL "TIMING")
+	add_executable(${TARGET_NAME} ${HEADERS} ${SOURCES} ${BASE_DIR}/benchmarking/timing_test.c)
 else()
 	error("PLEASE SPECIFY A TARGET")
 endif ()
 
-set(FLAGS -DSECURITY_LEVEL=${SECLVL})
+set(FLAGS "${FLAGS} -DSECURITY_LEVEL=${SECLVL}")
 
 # Set the verbosity level
 if(${VERBOSE} STREQUAL "1")
@@ -92,8 +96,9 @@ if(${CROSSCOMPILE} STREQUAL "1")
 	set(FLAGS "${FLAGS} -DCROSSCOMPILE")
 endif()
 
-
 set_property(TARGET ${TARGET_NAME} APPEND PROPERTY COMPILE_FLAGS ${FLAGS})
+target_link_libraries(${TARGET_NAME} m)
+message(${FLAGS})
 
 if(${CROSSCOMPILE} STREQUAL "1")
 	set_target_properties(${TARGET_NAME} PROPERTIES SUFFIX ".elf")
@@ -136,6 +141,5 @@ if(${CROSSCOMPILE} STREQUAL "1")
 	add_custom_target(flash
 		${stm32programmer} -c port=SWD -w "$<TARGET_FILE:${TARGET_NAME}>" -g
 		DEPENDS ${TARGET_NAME})
-
 endif()
 
