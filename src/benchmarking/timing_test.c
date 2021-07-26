@@ -3,15 +3,13 @@
 #include "board_config.h"
 #include <stdint.h>
 #include "timing_stats.h"
-#include <math.h>
 
 int main() {
 #ifdef CROSSCOMPILE
     setup();
     timer_init();
 #endif
-
-    const int ITERATIONS = 100;
+    const int ITERATIONS = 10;
     unsigned char pk[PUBLIC_KEY_BYTES];
     unsigned char sk[SECRET_KEY_BYTES];
     unsigned char ct[CIPHERTEXT_BYTES];
@@ -53,9 +51,6 @@ int main() {
         welford_update(&enc_timer, ((long double)(enc_end - enc_start)));
         welford_update(&dec_timer, ((long double)(dec_end - dec_start)));
     }
-#ifdef CROSSCOMPILE
-    ledOff();
-#endif
 
 #ifdef DEBUG
     printf("\r\nKey Generation \r\n");
@@ -64,6 +59,11 @@ int main() {
     welford_print(enc_timer);
     printf("\r\nDecryption \r\n");
     welford_print(dec_timer);
+#endif
+
+#ifdef CROSSCOMPILE
+    ledOff();
+    printf("\r\nDONE\r\n");
 #endif
 
 }

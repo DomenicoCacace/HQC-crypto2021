@@ -87,8 +87,10 @@ set(FLAGS "${FLAGS} -DSECURITY_LEVEL=${SECLVL}")
 # Set the verbosity level
 if(${VERBOSE} STREQUAL "1")
 	set(FLAGS "${FLAGS} -DDEBUG")
+	set(CMAKE_BUILD_TYPE Debug)
 elseif(${VERBOSE} STREQUAL "2")
 	set(FLAGS "${FLAGS} -DVERBOSE -DDEBUG")
+	set(CMAKE_BUILD_TYPE Debug)
 endif()
 
 # Toggle ARM configs
@@ -98,7 +100,6 @@ endif()
 
 set_property(TARGET ${TARGET_NAME} APPEND PROPERTY COMPILE_FLAGS ${FLAGS})
 target_link_libraries(${TARGET_NAME} m)
-message(${FLAGS})
 
 if(${CROSSCOMPILE} STREQUAL "1")
 	set_target_properties(${TARGET_NAME} PROPERTIES SUFFIX ".elf")
