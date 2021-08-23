@@ -159,7 +159,8 @@ void hqc_pke_decrypt(uint64_t *m, const uint64_t *u, const uint64_t *v, const un
 
     // Compute v - u.y
     vect_resize(tmp1, PARAM_N, v, PARAM_N1N2);
-    vect_mul(tmp2, y, u, PARAM_OMEGA, &perm_seedexpander);
+    safe_mul(tmp2, NULL, y, u, PARAM_OMEGA, &perm_seedexpander);
+    //vect_mul(tmp2, y, u, PARAM_OMEGA, &perm_seedexpander);
     vect_add(tmp2, tmp1, tmp2, VEC_N_SIZE_64);
 
     #ifdef VERBOSE
