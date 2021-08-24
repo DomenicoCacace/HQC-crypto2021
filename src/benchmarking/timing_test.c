@@ -9,7 +9,7 @@ int main() {
     setup();
     timer_init();
 #endif
-    const int ITERATIONS = 10;
+    const int ITERATIONS = 1000;
     unsigned char pk[PUBLIC_KEY_BYTES];
     unsigned char sk[SECRET_KEY_BYTES];
     unsigned char ct[CIPHERTEXT_BYTES];

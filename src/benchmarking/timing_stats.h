@@ -60,7 +60,7 @@ void welford_update(welford_t* state, long double sample) {
 
 static inline
 void welford_print(const welford_t state) {
-    printf("%.2Lf,%.2Lf\r\n",
+    printf("%.2Lf, %.2Lf\r\n",
            state.mean,
            sqrtl(state.M2/(long double)(state.count-1)));
 }
