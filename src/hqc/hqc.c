@@ -148,6 +148,7 @@ void hqc_pke_decrypt(uint64_t *m, const uint64_t *u, const uint64_t *v, const un
     uint8_t pk[PUBLIC_KEY_BYTES] = {0};
     uint64_t tmp1[VEC_N_SIZE_64] = {0};
     uint64_t tmp2[VEC_N_SIZE_64] = {0};
+    uint64_t mask[VEC_N_SIZE_64];
     seedexpander_state perm_seedexpander;
     uint8_t perm_seed[SEED_BYTES] = {0};
 
@@ -159,10 +160,11 @@ void hqc_pke_decrypt(uint64_t *m, const uint64_t *u, const uint64_t *v, const un
 
     // Compute v - u.y
     vect_resize(tmp1, PARAM_N, v, PARAM_N1N2);
-    safe_mul(tmp2, NULL, y, u, PARAM_OMEGA, &perm_seedexpander);
+    safe_mul(tmp2, mask, y, u, PARAM_OMEGA, &perm_seedexpander);
     //vect_mul(tmp2, y, u, PARAM_OMEGA, &perm_seedexpander);
     vect_add(tmp2, tmp1, tmp2, VEC_N_SIZE_64);
 
+    vect_add(tmp2, tmp2, mask, VEC_N_SIZE_64);
     #ifdef VERBOSE
         printf("\n\nu: "); vect_print(u, VEC_N_SIZE_BYTES);
         printf("\n\nv: "); vect_print(v, VEC_N1N2_SIZE_BYTES);

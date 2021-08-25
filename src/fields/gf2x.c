@@ -174,11 +174,25 @@ void vect_mul(uint64_t *o, const uint32_t *a1, const uint64_t *a2, const uint16_
  */
 void safe_mul(uint64_t *o, uint64_t *mask, uint32_t *a1, const uint64_t *a2, const uint16_t weight, seedexpander_state *ctx) {
 
+    seedexpander_state mask_seedexpander;
+    uint8_t mask_seed[SEED_BYTES];
+
     uint32_t sparse_lo[PARAM_OMEGA] = {0};
     uint32_t sparse_hi[PARAM_OMEGA] = {0};
+    uint64_t dense_lo[VEC_N_SIZE_64] = {0};
+    uint64_t dense_hi[VEC_N_SIZE_64] = {0};
 
-    memcpy(sparse_lo, a1, (weight/2)*sizeof(uint32_t));
-    memcpy(sparse_hi+(weight/2), a1+(weight/2), (weight - weight/2)*sizeof(uint32_t));
+    // Get randomness for masking
+    shake_prng(mask_seed, SEED_BYTES);
+    seedexpander_init(&mask_seedexpander, mask_seed, SEED_BYTES);
+    vect_set_random_fixed_weight(&mask_seedexpander, mask, PARAM_OMEGA);
+
+    // Split the operands
+    memcpy(sparse_lo, a1, (PARAM_OMEGA/2)*sizeof(uint32_t));
+    memcpy(sparse_hi+(PARAM_OMEGA/2), a1+(PARAM_OMEGA/2), (PARAM_OMEGA - PARAM_OMEGA/2)*sizeof(uint32_t));
+
+    memcpy(dense_lo, a2, (VEC_N_SIZE_64/2)*sizeof(uint64_t));
+    memcpy(dense_hi+(VEC_N_SIZE_64/2), a2+(VEC_N_SIZE_64/2), (VEC_N_SIZE_64 - VEC_N_SIZE_64/2)*sizeof(uint64_t));
 
 #ifdef VERBOSE
     printf("\nsparse_in: ");
@@ -188,7 +202,12 @@ void safe_mul(uint64_t *o, uint64_t *mask, uint32_t *a1, const uint64_t *a2, con
     uint64_t temp1[VEC_N_SIZE_64] = {0};
     uint64_t temp2[VEC_N_SIZE_64] = {0};
 
-    vect_mul(temp1, sparse_lo, a2, PARAM_OMEGA - (PARAM_OMEGA%2), ctx);
-    vect_mul(temp2, sparse_hi, a2, PARAM_OMEGA, ctx);
-    vect_add(o, temp1, temp2, VEC_N_SIZE_64);
+    vect_mul(temp1, sparse_hi, dense_lo, PARAM_OMEGA, ctx);
+    vect_mul(temp2, sparse_lo, dense_hi, PARAM_OMEGA, ctx);
+    vect_add(o, mask, temp1, VEC_N_SIZE_64);
+    vect_add(o, o, temp2, VEC_N_SIZE_64);
+    vect_mul(temp1, sparse_hi, dense_hi, PARAM_OMEGA, ctx);
+    vect_mul(temp2, sparse_lo, dense_lo, PARAM_OMEGA, ctx);
+    vect_add(mask, mask, temp1, VEC_N_SIZE_64);
+    vect_add(o, o, temp2, VEC_N_SIZE_64);
 }
