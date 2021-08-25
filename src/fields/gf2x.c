@@ -203,11 +203,11 @@ void safe_mul(uint64_t *o, uint64_t *mask, uint32_t *a1, const uint64_t *a2, con
     uint64_t temp2[VEC_N_SIZE_64] = {0};
 
     vect_mul(temp1, sparse_hi, dense_lo, PARAM_OMEGA, ctx);
-    vect_mul(temp2, sparse_lo, dense_hi, PARAM_OMEGA, ctx);
+    vect_mul(temp2, sparse_lo, dense_hi, PARAM_OMEGA-(PARAM_OMEGA%2), ctx);
     vect_add(o, mask, temp1, VEC_N_SIZE_64);
     vect_add(o, o, temp2, VEC_N_SIZE_64);
     vect_mul(temp1, sparse_hi, dense_hi, PARAM_OMEGA, ctx);
-    vect_mul(temp2, sparse_lo, dense_lo, PARAM_OMEGA, ctx);
+    vect_mul(temp2, sparse_lo, dense_lo, PARAM_OMEGA-(PARAM_OMEGA%2), ctx);
     vect_add(mask, mask, temp1, VEC_N_SIZE_64);
     vect_add(o, o, temp2, VEC_N_SIZE_64);
 }
