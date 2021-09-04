@@ -160,17 +160,18 @@ void hqc_pke_decrypt(uint64_t *m, const uint64_t *u, const uint64_t *v, const un
 
     // Compute v - u.y
     vect_resize(tmp1, PARAM_N, v, PARAM_N1N2);
-    safe_mul(tmp2, mask, y, u, PARAM_OMEGA, &perm_seedexpander);
-    //vect_mul(tmp2, y, u, PARAM_OMEGA, &perm_seedexpander);
+    safe_mul(tmp2, mask, y, u, &perm_seedexpander);
     vect_add(tmp2, tmp1, tmp2, VEC_N_SIZE_64);
 
-    vect_add(tmp2, tmp2, mask, VEC_N_SIZE_64);
     #ifdef VERBOSE
         printf("\n\nu: "); vect_print(u, VEC_N_SIZE_BYTES);
         printf("\n\nv: "); vect_print(v, VEC_N1N2_SIZE_BYTES);
         printf("\n\ny: "); vect_print_sparse(y, PARAM_OMEGA);
         printf("\n\nv - u.y: "); vect_print(tmp2, VEC_N_SIZE_BYTES);
     #endif
+
+    // remove the mask
+    vect_add(tmp2, tmp2, mask, VEC_N_SIZE_64);
 
     // Compute m by decoding v - u.y
     code_decode(m, tmp2);

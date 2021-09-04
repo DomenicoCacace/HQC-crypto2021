@@ -138,8 +138,10 @@ static void fast_convolution_mult(uint64_t *o, const uint32_t *a1, const uint64_
     }
 }
 
+
 /**
- * @brief computes product of the polynomial a1(x) with the sparse polynomial a2
+ * @brief computes product of the polynomial a1(x) with the sparse polynomial a2; the dense polynomial
+ * has always length VEC_N_SIZE_64/2
  *
  *  o(x) = a1(x)a2(x)
  *
@@ -149,10 +151,10 @@ static void fast_convolution_mult(uint64_t *o, const uint32_t *a1, const uint64_
  * @param[in] weight Hamming wifht of the sparse polynomial a2
  * @param[in] ctx Pointer to a seed expander used to randomize the multiplication process
  */
-static void fast_convolution_mult_hi(uint64_t *o, const uint32_t *a1, const uint64_t *a2, const uint16_t weight, seedexpander_state *ctx){
+static void fast_convolution_mult_half(uint64_t *o, const uint32_t *a1, const uint64_t *a2, const uint16_t weight, seedexpander_state *ctx){
     uint64_t carry;
     int32_t dec, s;
-    uint64_t table[TABLE * (VEC_N_SIZE_64/2 + 1)];
+    uint64_t table[TABLE * ((VEC_N_SIZE_64>>1) + 1)];
     uint16_t permuted_table[TABLE];
     uint16_t permutation_table[TABLE];
     uint16_t permuted_sparse_vect[PARAM_OMEGA_E];
@@ -168,25 +170,25 @@ static void fast_convolution_mult_hi(uint64_t *o, const uint32_t *a1, const uint
         swap(permuted_table + i, 0, permutation_table[i] % (TABLE - i));
     }
 
-    uint64_t *pt = table + (permuted_table[0] * (VEC_N_SIZE_64/2 + 1));
+    uint64_t *pt = table + (permuted_table[0] * ((VEC_N_SIZE_64>>1) + 1));
 
-    for (size_t i = 0 ; i < VEC_N_SIZE_64/2 ; i++) {
+    for (size_t i = 0 ; i < (VEC_N_SIZE_64>>1) ; i++) {
         pt[i] = a2[i];
     }
 
-    pt[VEC_N_SIZE_64/2] = 0x0UL;
+    pt[VEC_N_SIZE_64>>1] = 0x0UL;
 
     for (size_t i = 1; i < TABLE; i++) {
         carry = 0x0UL;
-        int32_t idx = permuted_table[i] * (VEC_N_SIZE_64/2 + 1);
+        int32_t idx = permuted_table[i] * ((VEC_N_SIZE_64>>1) + 1);
         uint64_t *pt = table + idx;
 
-        for (size_t j = 0; j < VEC_N_SIZE_64/2; j++) {
+        for (size_t j = 0; j < (VEC_N_SIZE_64>>1); j++) {
             pt[j] = (a2[j] << i) ^ carry;
             carry = (a2[j] >> ((WORD - i)));
         }
 
-        pt[VEC_N_SIZE_64/2] = carry;
+        pt[VEC_N_SIZE_64>>1] = carry;
     }
 
     for (size_t i = 0; i < weight; i++) {
@@ -206,9 +208,9 @@ static void fast_convolution_mult_hi(uint64_t *o, const uint32_t *a1, const uint
 
         uint16_t *res_16 = (uint16_t *) o;
         res_16 += s;
-        uint64_t *pt = table + (permuted_table[dec] * (VEC_N_SIZE_64/2 + 1));
+        uint64_t *pt = table + (permuted_table[dec] * ((VEC_N_SIZE_64>>1) + 1));
 
-        for (size_t j = 0; j < VEC_N_SIZE_64/2 + 1; j++) {
+        for (size_t j = 0; j < (VEC_N_SIZE_64>>1) + 1; j++) {
             uint64_t tmp = (uint64_t) res_16[0] | ((uint64_t) (res_16[1])) << 16 |
                            (uint64_t) (res_16[2]) << 32 | ((uint64_t) (res_16[3])) << 48;
             tmp ^= pt[j];
@@ -217,88 +219,6 @@ static void fast_convolution_mult_hi(uint64_t *o, const uint32_t *a1, const uint
         }
     }
 }
-
-/**
- * @brief computes product of the polynomial a1(x) with the sparse polynomial a2
- *
- *  o(x) = a1(x)a2(x)
- *
- * @param[out] o Pointer to the result
- * @param[in] a1 Pointer to the sparse polynomial a2 (list of degrees of the monomials which appear in a2)
- * @param[in] a2 Pointer to the polynomial a1(x)
- * @param[in] weight Hamming wifht of the sparse polynomial a2
- * @param[in] ctx Pointer to a seed expander used to randomize the multiplication process
- */
-static void fast_convolution_mult_lo(uint64_t *o, const uint32_t *a1, const uint64_t *a2, const uint16_t weight, seedexpander_state *ctx){
-    uint64_t carry;
-    int32_t dec, s;
-    uint64_t table[TABLE * (VEC_N_SIZE_64/2 + 1)];
-    uint16_t permuted_table[TABLE];
-    uint16_t permutation_table[TABLE];
-    uint16_t permuted_sparse_vect[PARAM_OMEGA_E];
-    uint16_t permutation_sparse_vect[PARAM_OMEGA_E];
-
-    for (size_t i = 0; i < TABLE; i++) {
-        permuted_table[i] = (uint16_t) i;
-    }
-
-    seedexpander(ctx, (uint8_t *) permutation_table, TABLE << 1);
-
-    for (size_t i = 0; i < TABLE - 1; i++) {
-        swap(permuted_table + i, 0, permutation_table[i] % (TABLE - i));
-    }
-
-    uint64_t *pt = table + (permuted_table[0] * (VEC_N_SIZE_64/2 + 1));
-
-    for (size_t i = 0 ; i < VEC_N_SIZE_64/2 ; i++) {
-        pt[i] = a2[i];
-    }
-
-    pt[VEC_N_SIZE_64/2] = 0x0UL;
-
-    for (size_t i = 1; i < TABLE; i++) {
-        carry = 0x0UL;
-        int32_t idx = permuted_table[i] * (VEC_N_SIZE_64/2 + 1);
-        uint64_t *pt = table + idx;
-
-        for (size_t j = 0; j < VEC_N_SIZE_64/2; j++) {
-            pt[j] = (a2[j] << i) ^ carry;
-            carry = (a2[j] >> ((WORD - i)));
-        }
-
-        pt[VEC_N_SIZE_64/2] = carry;
-    }
-
-    for (size_t i = 0; i < weight; i++) {
-        permuted_sparse_vect[i] = (uint16_t) i;
-    }
-
-    seedexpander(ctx, (uint8_t *) permutation_sparse_vect, weight << 1);
-
-    for (int32_t i = 0; i < (weight - 1); i++) {
-        swap(permuted_sparse_vect + i, 0, permutation_sparse_vect[i] % (weight - i));
-    }
-
-    for (size_t i = 0; i < weight; i++) {
-        carry = 0x0UL;
-        dec = a1[permuted_sparse_vect[i]] & 0xf;
-        s = a1[permuted_sparse_vect[i]] >> 4;
-
-        uint16_t *res_16 = (uint16_t *) o;
-        res_16 += s;
-        uint64_t *pt = table + (permuted_table[dec] * (VEC_N_SIZE_64/2 + 1));
-
-        for (size_t j = 0; j < VEC_N_SIZE_64/2 + 1; j++) {
-            uint64_t tmp = (uint64_t) res_16[0] | ((uint64_t) (res_16[1])) << 16 |
-                           (uint64_t) (res_16[2]) << 32 | ((uint64_t) (res_16[3])) << 48;
-            tmp ^= pt[j];
-            memcpy(res_16, &tmp, 8);
-            res_16 += 4;
-        }
-    }
-}
-
-
 
 
 /**
@@ -320,44 +240,17 @@ void vect_mul(uint64_t *o, const uint32_t *a1, const uint64_t *a2, const uint16_
     reduce(o, tmp);
 }
 
-/**
- * @brief Multiply two polynomials modulo \f$ X^n - 1\f$.
- *
- * This functions multiplies a sparse polynomial <b>a1</b> (of Hamming weight equal to <b>weight</b>)
- * and a dense polynomial <b>a2</b>. The multiplication is done modulo \f$ X^n - 1\f$.
- *
- * @param[out] o Pointer to the result
- * @param[in] a1 Pointer to the sparse polynomial
- * @param[in] a2 Pointer to the dense polynomial
- * @param[in] weight Integer that is the weigt of the sparse polynomial
- * @param[in] ctx Pointer to the randomness context
- */
-void vect_mul_hi(uint64_t *o, const uint32_t *a1, const uint64_t *a2, const uint16_t weight, seedexpander_state *ctx) {
-    uint64_t tmp[(VEC_N_SIZE_64 << 1) + 1] = {0};
-
-    fast_convolution_mult_hi(tmp + VEC_N_SIZE_64 / 2, a1, a2, weight, ctx);
-    reduce(o, tmp);
-}
 
 /**
- * @brief Multiply two polynomials modulo \f$ X^n - 1\f$.
+ * @brief Sets the given vector null
  *
- * This functions multiplies a sparse polynomial <b>a1</b> (of Hamming weight equal to <b>weight</b>)
- * and a dense polynomial <b>a2</b>. The multiplication is done modulo \f$ X^n - 1\f$.
- *
- * @param[out] o Pointer to the result
- * @param[in] a1 Pointer to the sparse polynomial
- * @param[in] a2 Pointer to the dense polynomial
- * @param[in] weight Integer that is the weigt of the sparse polynomial
- * @param[in] ctx Pointer to the randomness context
+ * @param vec the raw_temp vector to nullify
  */
-void vect_mul_lo(uint64_t *o, const uint32_t *a1, const uint64_t *a2, const uint16_t weight, seedexpander_state *ctx) {
-    uint64_t tmp[(VEC_N_SIZE_64 << 1) + 1] = {0};
-
-    fast_convolution_mult_lo(tmp, a1, a2, weight, ctx);
-    reduce(o, tmp);
+static inline
+void reset(uint64_t *vec) {
+    for(int i = 0; i < (VEC_N_SIZE_64<<1)+1; i++)
+        vec[i]=0;
 }
-
 
 
 /**
@@ -373,10 +266,12 @@ void vect_mul_lo(uint64_t *o, const uint32_t *a1, const uint64_t *a2, const uint
  * @param[in] weight Integer that is the weight of the sparse polynomial
  * @param[in] ctx Pointer to the randomness context
  */
-void safe_mul(uint64_t *o, uint64_t *mask, uint32_t *a1, const uint64_t *a2, const uint16_t weight, seedexpander_state *ctx) {
+void safe_mul(uint64_t *o, uint64_t *mask, uint32_t *a1, const uint64_t *a2, seedexpander_state *ctx) {
 
     seedexpander_state mask_seedexpander;
     uint8_t mask_seed[SEED_BYTES];
+
+    uint64_t raw_temp[(VEC_N_SIZE_64 << 1) + 1];
 
     // Get randomness for masking
     shake_prng(mask_seed, SEED_BYTES);
@@ -392,12 +287,25 @@ void safe_mul(uint64_t *o, uint64_t *mask, uint32_t *a1, const uint64_t *a2, con
     uint64_t temp1[VEC_N_SIZE_64] = {0};
     uint64_t temp2[VEC_N_SIZE_64] = {0};
 
-    vect_mul_lo(temp1, a1+(PARAM_OMEGA/2), a2, PARAM_OMEGA - PARAM_OMEGA/2, ctx);
-    vect_mul_hi(temp2, a1, a2 + (VEC_N_SIZE_64 / 2), PARAM_OMEGA / 2, ctx);
+    reset(raw_temp);
+    fast_convolution_mult_half(raw_temp,a1+(PARAM_OMEGA>>1), a2, PARAM_OMEGA - (PARAM_OMEGA>>1), ctx);
+    reduce(temp1, raw_temp);
+
+    reset(raw_temp);
+    fast_convolution_mult_half(raw_temp+(VEC_N_SIZE_64>>1), a1, a2+(VEC_N_SIZE_64>>1), PARAM_OMEGA>>1, ctx);
+    reduce(temp2, raw_temp);
+
     vect_add(o, mask, temp1, VEC_N_SIZE_64);
     vect_add(o, o, temp2, VEC_N_SIZE_64);
-    vect_mul_hi(temp1, a1 + (PARAM_OMEGA / 2), a2 + (VEC_N_SIZE_64 / 2), PARAM_OMEGA - PARAM_OMEGA / 2, ctx);
-    vect_mul_lo(temp2, a1, a2, PARAM_OMEGA/2, ctx);
+
+    reset(raw_temp);
+    fast_convolution_mult_half(raw_temp+(VEC_N_SIZE_64>>1), a1+(PARAM_OMEGA>>1), a2+(VEC_N_SIZE_64>>1), PARAM_OMEGA - (PARAM_OMEGA>>1), ctx);
+    reduce(temp1, raw_temp);
+
+    reset(raw_temp);
+    fast_convolution_mult_half(raw_temp, a1, a2, PARAM_OMEGA>>1, ctx);
+    reduce(temp2, raw_temp);
+
     vect_add(mask, mask, temp1, VEC_N_SIZE_64);
     vect_add(o, o, temp2, VEC_N_SIZE_64);
 }
