@@ -19,20 +19,17 @@ int main() {
     unsigned char key2[SHARED_SECRET_BYTES];
 
     // timers declaration
-    uint32_t gen_start, gen_end;
     uint32_t enc_start, enc_end;
     uint32_t dec_start, dec_end;
-    welford_t gen_timer, enc_timer, dec_timer, mul_timer;
-    welford_t gen_timer_0, enc_timer_0, dec_timer_0, mul_timer_0;
+    welford_t enc_timer, dec_timer, mul_timer;
+    welford_t enc_timer_0, dec_timer_0, mul_timer_0;
 
 
     // initialize timers
-    welford_init(&gen_timer_0);
     welford_init(&enc_timer_0);
     welford_init(&dec_timer_0);
     welford_init(&mul_timer_0);
 
-    welford_init(&gen_timer);
     welford_init(&enc_timer);
     welford_init(&dec_timer);
     welford_init(&mul_timer);
@@ -42,9 +39,7 @@ int main() {
     ledOn();
 #endif
     for(int i = 0; i < ITERATIONS; i++) {
-        gen_start = rdtsc();
         crypto_kem_keypair(pk, sk);
-        gen_end = rdtsc();
 
         enc_start = rdtsc();
         crypto_kem_enc(ct, key1, pk);
@@ -54,7 +49,6 @@ int main() {
         crypto_kem_dec(key2, ct, sk);
         dec_end = rdtsc();
 
-        welford_update(&gen_timer, ((long double) (gen_end - gen_start)));
         welford_update(&enc_timer, ((long double) (enc_end - enc_start)));
         welford_update(&dec_timer, ((long double) (dec_end - dec_start)));
         welford_update(&mul_timer, ((long double) (mul_end - mul_start)));
@@ -67,15 +61,13 @@ int main() {
     for(int i = 0; i < ITERATIONS; i++) {
 
         enc_start = rdtsc();
-        crypto_kem_enc(ct, key1, pk);
+        crypto_kem_enc_const(ct, key1, pk);
         enc_end = rdtsc();
 
         dec_start = rdtsc();
         crypto_kem_dec(key2, ct, sk);
         dec_end = rdtsc();
 
-
-        welford_update(&gen_timer_0, ((long double)(gen_end - gen_start)));
         welford_update(&enc_timer_0, ((long double)(enc_end - enc_start)));
         welford_update(&dec_timer_0, ((long double)(dec_end - dec_start)));
         welford_update(&mul_timer_0, ((long double)(mul_end - mul_start)));

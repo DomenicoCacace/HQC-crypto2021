@@ -63,13 +63,7 @@ int crypto_kem_enc(unsigned char *ct, unsigned char *ss, const unsigned char *pk
     shake256incctx shake256state;
 
     // Computing m
-#ifdef CONST
-    for(int i = 0; i < VEC_K_SIZE_64-1; i++)
-        m[i] = 0;
-    m[VEC_K_SIZE_64-1] = 7;
-#else
     vect_set_random_from_prng(m);
-#endif
 
     // Computing theta
     shake256_512_ds(&shake256state, theta, (uint8_t*) m, VEC_K_SIZE_BYTES, G_FCT_DOMAIN);
@@ -100,6 +94,64 @@ int crypto_kem_enc(unsigned char *ct, unsigned char *ss, const unsigned char *pk
 
     return 0;
 }
+
+#ifdef CONST
+/**
+ * @brief Encapsulation of the HQC_KEM IND_CAA2 scheme, but with a fixed message
+ *
+ * @param[out] ct String containing the ciphertext
+ * @param[out] ss String containing the shared secret
+ * @param[in] pk String containing the public key
+ * @returns 0 if encapsulation is successful
+ */
+int crypto_kem_enc_const(unsigned char *ct, unsigned char *ss, const unsigned char *pk) {
+#ifdef VERBOSE
+    printf("\n\n\n\n### ENCAPS ###");
+#endif
+
+    uint8_t theta[SHAKE256_512_BYTES] = {0};
+    uint64_t m[VEC_K_SIZE_64] = {0};
+    uint64_t u[VEC_N_SIZE_64] = {0};
+    uint64_t v[VEC_N1N2_SIZE_64] = {0};
+    uint8_t d[SHAKE256_512_BYTES] = {0};
+    uint8_t mc[VEC_K_SIZE_BYTES + VEC_N_SIZE_BYTES + VEC_N1N2_SIZE_BYTES] = {0};
+    shake256incctx shake256state;
+
+    // Computing m
+    for(int i = 0; i < VEC_K_SIZE_64-1; i++)
+        m[i] = 0;
+    m[VEC_K_SIZE_64-1] = 7;
+
+    // Computing theta
+    shake256_512_ds(&shake256state, theta, (uint8_t*) m, VEC_K_SIZE_BYTES, G_FCT_DOMAIN);
+
+    // Encrypting m
+    hqc_pke_encrypt(u, v, m, theta, pk);
+
+    // Computing d
+    shake256_512_ds(&shake256state, d, (uint8_t *) m, VEC_K_SIZE_BYTES, H_FCT_DOMAIN);
+
+    // Computing shared secret
+    memcpy(mc, m, VEC_K_SIZE_BYTES);
+    memcpy(mc + VEC_K_SIZE_BYTES, u, VEC_N_SIZE_BYTES);
+    memcpy(mc + VEC_K_SIZE_BYTES + VEC_N_SIZE_BYTES, v, VEC_N1N2_SIZE_BYTES);
+    shake256_512_ds(&shake256state, ss, mc, VEC_K_SIZE_BYTES + VEC_N_SIZE_BYTES + VEC_N1N2_SIZE_BYTES, K_FCT_DOMAIN);
+
+    // Computing ciphertext
+    hqc_ciphertext_to_string(ct, u, v, d);
+
+#ifdef VERBOSE
+    printf("\n\npk: "); for(int i = 0 ; i < PUBLIC_KEY_BYTES ; ++i) printf("%02x", pk[i]);
+        printf("\n\nm: "); vect_print(m, VEC_K_SIZE_BYTES);
+        printf("\n\ntheta: "); for(int i = 0 ; i < SHAKE256_512_BYTES ; ++i) printf("%02x", theta[i]);
+        printf("\n\nd: "); for(int i = 0 ; i < SHAKE256_512_BYTES ; ++i) printf("%02x", d[i]);
+        printf("\n\nciphertext: "); for(int i = 0 ; i < CIPHERTEXT_BYTES ; ++i) printf("%02x", ct[i]);
+        printf("\n\nsecret 1: "); for(int i = 0 ; i < SHARED_SECRET_BYTES ; ++i) printf("%02x", ss[i]);
+#endif
+
+    return 0;
+}
+#endif
 
 
 
