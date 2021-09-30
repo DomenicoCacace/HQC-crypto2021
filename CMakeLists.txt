@@ -78,9 +78,12 @@ if(${MODE} STREQUAL "FUNCTIONAL")
 	add_executable(${TARGET_NAME} ${HEADERS} ${SOURCES} ${BASE_DIR}/benchmarking/functional_test.c)
 elseif(${MODE} STREQUAL "TIMING")
 	add_executable(${TARGET_NAME} ${HEADERS} ${SOURCES} ${BASE_DIR}/benchmarking/timing_test.c)
+elseif(${MODE} STREQUAL "CONST")
+	add_executable(${TARGET_NAME} ${HEADERS} ${SOURCES} ${BASE_DIR}/benchmarking/const_test.c)
+	set(FLAGS "${FLAGS} -DCONST")
 else()
 	error("PLEASE SPECIFY A TARGET")
-endif ()
+endif()
 
 set(FLAGS "${FLAGS} -DSECURITY_LEVEL=${SECLVL}")
 

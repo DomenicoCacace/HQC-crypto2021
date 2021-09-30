@@ -26,11 +26,6 @@ int main() {
     welford_init(&enc_timer);
     welford_init(&dec_timer);
 
-    // heat cache to minimize variance
-    crypto_kem_keypair(pk, sk);
-    crypto_kem_enc(ct, key1, pk);
-    crypto_kem_dec(key2, ct, sk);
-
 #ifdef CROSSCOMPILE
     ledOn();
 #endif
@@ -65,5 +60,4 @@ int main() {
     ledOff();
     printf("\r\nDONE\r\n");
 #endif
-
 }

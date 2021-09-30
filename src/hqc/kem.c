@@ -63,7 +63,13 @@ int crypto_kem_enc(unsigned char *ct, unsigned char *ss, const unsigned char *pk
     shake256incctx shake256state;
 
     // Computing m
+#ifdef CONST
+    for(int i = 0; i < VEC_K_SIZE_64-1; i++)
+        m[i] = 0;
+    m[VEC_K_SIZE_64-1] = 7;
+#else
     vect_set_random_from_prng(m);
+#endif
 
     // Computing theta
     shake256_512_ds(&shake256state, theta, (uint8_t*) m, VEC_K_SIZE_BYTES, G_FCT_DOMAIN);
