@@ -38,4 +38,9 @@ int crypto_kem_keypair(unsigned char* pk, unsigned char* sk);
 int crypto_kem_enc(unsigned char* ct, unsigned char* ss, const unsigned char* pk);
 int crypto_kem_dec(unsigned char* ss, const unsigned char* ct, const unsigned char* sk);
 
+#ifdef CONST
+int crypto_kem_enc_const(unsigned char* ct, unsigned char* ss, const unsigned char* pk);
+#endif
+
+
 #endif

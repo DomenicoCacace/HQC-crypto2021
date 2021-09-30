@@ -22,7 +22,6 @@ int main() {
 #endif
 
       for(int i = 0; i < ITERATIONS; i++) {
-
         crypto_kem_keypair(pk, sk);
         crypto_kem_enc(ct, key1, pk);
         crypto_kem_dec(key2, ct, sk);

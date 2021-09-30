@@ -11,6 +11,13 @@
 #include "../fields/gf2x.h"
 #include "hqc.h"
 
+#ifdef CONST
+    extern uint32_t mul_start, mul_end;
+    #ifndef CROSSCOMPILE
+        #include "../benchmarking/timing_stats.h"
+    #endif
+#endif
+
 #ifdef VERBOSE
     #include <stdio.h>
 #endif
@@ -142,6 +149,7 @@ void hqc_pke_encrypt(uint64_t *u, uint64_t *v, uint64_t *m, unsigned char *theta
  * @param[in] v Vector v (second part of the ciphertext)
  * @param[in] sk String containing the secret key
  */
+
 void hqc_pke_decrypt(uint64_t *m, const uint64_t *u, const uint64_t *v, const unsigned char *sk) {
     uint64_t x[VEC_N_SIZE_64] = {0};
     uint32_t y[PARAM_OMEGA] = {0};
@@ -152,6 +160,7 @@ void hqc_pke_decrypt(uint64_t *m, const uint64_t *u, const uint64_t *v, const un
     seedexpander_state perm_seedexpander;
     uint8_t perm_seed[SEED_BYTES] = {0};
 
+
     // Retrieve x, y, pk from secret key
     hqc_secret_key_from_string(x, y, pk, sk);
 
@@ -159,11 +168,25 @@ void hqc_pke_decrypt(uint64_t *m, const uint64_t *u, const uint64_t *v, const un
     seedexpander_init(&perm_seedexpander, perm_seed, SEED_BYTES);
 
     // Compute v - u.y
+#ifdef CONST
+    #ifdef CROSSCOMPILE
+        mul_start = (*(uint32_t *)0xE0001004);
+    #else
+        mul_start = rdtsc();
+    #endif
+#endif
     vect_resize(tmp1, PARAM_N, v, PARAM_N1N2);
     safe_mul(tmp2, mask, y, u, &perm_seedexpander);
     vect_add(tmp2, tmp1, tmp2, VEC_N_SIZE_64);
+#ifdef CONST
+    #ifdef CROSSCOMPILE
+        mul_end = (*(uint32_t *)0xE0001004);
+    #else
+        mul_end = rdtsc();
+    #endif
+#endif
 
-    #ifdef VERBOSE
+#ifdef VERBOSE
         printf("\n\nu: "); vect_print(u, VEC_N_SIZE_BYTES);
         printf("\n\nv: "); vect_print(v, VEC_N1N2_SIZE_BYTES);
         printf("\n\ny: "); vect_print_sparse(y, PARAM_OMEGA);
@@ -175,4 +198,5 @@ void hqc_pke_decrypt(uint64_t *m, const uint64_t *u, const uint64_t *v, const un
 
     // Compute m by decoding v - u.y
     code_decode(m, tmp2);
+
 }
