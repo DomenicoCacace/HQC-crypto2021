@@ -118,9 +118,9 @@ int crypto_kem_enc_const(unsigned char *ct, unsigned char *ss, const unsigned ch
     shake256incctx shake256state;
 
     // Computing m
-    for(int i = 0; i < VEC_K_SIZE_64-1; i++)
-        m[i] = 0;
-    m[VEC_K_SIZE_64-1] = 7;
+    for(int i = 0; i < VEC_K_SIZE_64; i++)
+        m[i] = 0x5555555555555555;
+
 
     // Computing theta
     shake256_512_ds(&shake256state, theta, (uint8_t*) m, VEC_K_SIZE_BYTES, G_FCT_DOMAIN);

@@ -100,6 +100,7 @@ void hqc_pke_encrypt(uint64_t *u, uint64_t *v, uint64_t *m, unsigned char *theta
     uint64_t e[VEC_N_SIZE_64] = {0};
     uint64_t tmp1[VEC_N_SIZE_64] = {0};
     uint64_t tmp2[VEC_N_SIZE_64] = {0};
+    uint64_t mask_v[VEC_N_SIZE_64] = {0};
 
     // Create seed_expander from theta
     seedexpander_init(&seedexpander, theta, SEED_BYTES);
@@ -121,9 +122,10 @@ void hqc_pke_encrypt(uint64_t *u, uint64_t *v, uint64_t *m, unsigned char *theta
     vect_resize(tmp1, PARAM_N, v, PARAM_N1N2);
 
     // Compute v = m.G + s.r2 + e
-    vect_mul(tmp2, r2, s, PARAM_OMEGA_R, &seedexpander);
+    safe_mul(tmp2, mask_v, r2, s, PARAM_OMEGA_R, &seedexpander);
     vect_add(tmp2, e, tmp2, VEC_N_SIZE_64);
     vect_add(tmp2, tmp1, tmp2, VEC_N_SIZE_64);
+    vect_add(tmp2, mask_v, tmp2, VEC_N_SIZE_64);
     vect_resize(v, PARAM_N1N2, tmp2, PARAM_N);
 
     #ifdef VERBOSE
@@ -176,8 +178,12 @@ void hqc_pke_decrypt(uint64_t *m, const uint64_t *u, const uint64_t *v, const un
     #endif
 #endif
     vect_resize(tmp1, PARAM_N, v, PARAM_N1N2);
-    safe_mul(tmp2, mask, y, u, &perm_seedexpander);
+    safe_mul(tmp2, mask, y, u, PARAM_OMEGA, &perm_seedexpander);
     vect_add(tmp2, tmp1, tmp2, VEC_N_SIZE_64);
+
+    // remove the mask
+    vect_add(tmp2, tmp2, mask, VEC_N_SIZE_64);
+
 #ifdef CONST
     #ifdef CROSSCOMPILE
         mul_end = (*(uint32_t *)0xE0001004);
@@ -192,9 +198,6 @@ void hqc_pke_decrypt(uint64_t *m, const uint64_t *u, const uint64_t *v, const un
         printf("\n\ny: "); vect_print_sparse(y, PARAM_OMEGA);
         printf("\n\nv - u.y: "); vect_print(tmp2, VEC_N_SIZE_BYTES);
     #endif
-
-    // remove the mask
-    vect_add(tmp2, tmp2, mask, VEC_N_SIZE_64);
 
     // Compute m by decoding v - u.y
     code_decode(m, tmp2);
