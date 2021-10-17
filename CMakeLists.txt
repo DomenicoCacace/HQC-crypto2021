@@ -78,8 +78,11 @@ if(${MODE} STREQUAL "FUNCTIONAL")
 	add_executable(${TARGET_NAME} ${HEADERS} ${SOURCES} ${BASE_DIR}/benchmarking/functional_test.c)
 elseif(${MODE} STREQUAL "TIMING")
 	add_executable(${TARGET_NAME} ${HEADERS} ${SOURCES} ${BASE_DIR}/benchmarking/timing_test.c)
-elseif(${MODE} STREQUAL "CONST")
-	add_executable(${TARGET_NAME} ${HEADERS} ${SOURCES} ${BASE_DIR}/benchmarking/const_test.c)
+elseif(${MODE} STREQUAL "CONST-PKE")
+	add_executable(${TARGET_NAME} ${HEADERS} ${SOURCES} ${BASE_DIR}/benchmarking/const_test_pke.c)
+	set(FLAGS "${FLAGS} -DCONST")
+elseif(${MODE} STREQUAL "CONST-KEM")
+	add_executable(${TARGET_NAME} ${HEADERS} ${SOURCES} ${BASE_DIR}/benchmarking/const_test_kem.c)
 	set(FLAGS "${FLAGS} -DCONST")
 else()
 	error("PLEASE SPECIFY A TARGET")
@@ -116,12 +119,15 @@ if(${CROSSCOMPILE} STREQUAL "1")
 	target_compile_options(${TARGET_NAME} PUBLIC
 		-mcpu=cortex-m4
 		-mthumb
+		-march=armv7e-m
 		-mno-thumb-interwork
-		-mfpu=vfp
-		-msoft-float
 		-Wall
+		-Wextra
 		-ffunction-sections
 		-fdata-sections
+		-std=c99
+		-funroll-all-loops
+		-pedantic
 		-O3)
 
 	set(LINKER_SCRIPT ${STM32_DIR}/STM32F401RETx_FLASH.ld)
