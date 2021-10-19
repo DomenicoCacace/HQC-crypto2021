@@ -233,10 +233,16 @@ static void fast_convolution_mult_half(uint64_t *o, const uint32_t *a1, const ui
  * @param[in] weight Integer that is the weigt of the sparse polynomial
  * @param[in] ctx Pointer to the randomness context
  */
-void vect_mul(uint64_t *o, const uint32_t *a1, const uint64_t *a2, const uint16_t weight, seedexpander_state *ctx) {
+void vect_mul(uint64_t *o, const uint32_t *a1, const uint64_t *a2, const uint16_t weight) {
     uint64_t tmp[(VEC_N_SIZE_64 << 1) + 1] = {0};
 
-    fast_convolution_mult(tmp, a1, a2, weight, ctx);
+    uint8_t seed[SEED_BYTES];
+    seedexpander_state ctx;
+
+    shake_prng(seed, SEED_BYTES);
+    seedexpander_init(&ctx, seed, SEED_BYTES);
+
+    fast_convolution_mult(tmp, a1, a2, weight, &ctx);
     reduce(o, tmp);
 }
 
@@ -266,17 +272,21 @@ void reset(uint64_t *vec) {
  * @param[in] weight Integer that is the weight of the sparse polynomial
  * @param[in] ctx Pointer to the randomness context
  */
-void safe_mul(uint64_t *o, uint64_t *mask, uint32_t *a1, const uint64_t *a2, const uint16_t weight, seedexpander_state *ctx) {
+void safe_mul(uint64_t *o, uint64_t *mask, uint32_t *a1, const uint64_t *a2, const uint16_t weight) {
 
     seedexpander_state mask_seedexpander;
-    uint8_t mask_seed[SEED_BYTES];
+    uint8_t seed[SEED_BYTES];
+    seedexpander_state ctx;
 
     uint64_t raw_temp[(VEC_N_SIZE_64 << 1) + 1];
 
     // Get randomness for masking
-    shake_prng(mask_seed, SEED_BYTES);
-    seedexpander_init(&mask_seedexpander, mask_seed, SEED_BYTES);
+    shake_prng(seed, SEED_BYTES);
+    seedexpander_init(&mask_seedexpander, seed, SEED_BYTES);
     vect_set_random_fixed_weight(&mask_seedexpander, mask, weight);
+
+
+
 
 
 #ifdef VERBOSE
@@ -288,22 +298,29 @@ void safe_mul(uint64_t *o, uint64_t *mask, uint32_t *a1, const uint64_t *a2, con
     uint64_t temp2[VEC_N_SIZE_64] = {0};
 
     reset(raw_temp);
-    fast_convolution_mult_half(raw_temp,a1+(weight>>1), a2, weight - (weight>>1), ctx);
+    shake_prng(seed, SEED_BYTES);
+    seedexpander_init(&ctx, seed, SEED_BYTES);
+    fast_convolution_mult_half(raw_temp,a1+(weight>>1), a2, weight - (weight>>1), &ctx);
     reduce(temp1, raw_temp);
 
     reset(raw_temp);
-    fast_convolution_mult_half(raw_temp+(VEC_N_SIZE_64>>1), a1, a2+(VEC_N_SIZE_64>>1), weight>>1, ctx);
+    shake_prng(seed, SEED_BYTES);
+    seedexpander_init(&ctx, seed, SEED_BYTES);
+    fast_convolution_mult_half(raw_temp+(VEC_N_SIZE_64>>1), a1, a2+(VEC_N_SIZE_64>>1), weight>>1, &ctx);
     reduce(temp2, raw_temp);
 
     vect_add(o, mask, temp1, VEC_N_SIZE_64);
     vect_add(o, o, temp2, VEC_N_SIZE_64);
 
     reset(raw_temp);
-    fast_convolution_mult_half(raw_temp+(VEC_N_SIZE_64>>1), a1+(weight>>1), a2+(VEC_N_SIZE_64>>1), weight - (weight>>1), ctx);
+    shake_prng(seed, SEED_BYTES);
+    seedexpander_init(&ctx, seed, SEED_BYTES);
+    fast_convolution_mult_half(raw_temp+(VEC_N_SIZE_64>>1), a1+(weight>>1), a2+(VEC_N_SIZE_64>>1), weight - (weight>>1), &ctx);
     reduce(temp1, raw_temp);
 
     reset(raw_temp);
-    fast_convolution_mult_half(raw_temp, a1, a2, weight>>1, ctx);
+    shake_prng(seed, SEED_BYTES);
+    seedexpander_init(&ctx, seed, SEED_BYTES);    fast_convolution_mult_half(raw_temp, a1, a2, weight>>1, &ctx);
     reduce(temp2, raw_temp);
 
     vect_add(mask, mask, temp1, VEC_N_SIZE_64);

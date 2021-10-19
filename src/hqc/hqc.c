@@ -57,7 +57,7 @@ void hqc_pke_keygen(unsigned char* pk, unsigned char* sk) {
 
     // Compute public key
     vect_set_random(&pk_seedexpander, h);
-    vect_mul(s, y, h, PARAM_OMEGA, &sk_seedexpander);
+    vect_mul(s, y, h, PARAM_OMEGA);
     vect_add(s, x, s, VEC_N_SIZE_64);
 
     // Parse keys to string
@@ -114,15 +114,16 @@ void hqc_pke_encrypt(uint64_t *u, uint64_t *v, uint64_t *m, unsigned char *theta
     vect_set_random_fixed_weight(&seedexpander, e, PARAM_OMEGA_E);
 
     // Compute u = r1 + r2.h
-    vect_mul(u, r2, h, PARAM_OMEGA_R, &seedexpander);
+    vect_mul(u, r2, h, PARAM_OMEGA_R);
     vect_add(u, r1, u, VEC_N_SIZE_64);
+
 
     // Compute v = m.G by encoding the message
     code_encode(v, m);
     vect_resize(tmp1, PARAM_N, v, PARAM_N1N2);
 
     // Compute v = m.G + s.r2 + e
-    safe_mul(tmp2, mask_v, r2, s, PARAM_OMEGA_R, &seedexpander);
+    safe_mul(tmp2, mask_v, r2, s, PARAM_OMEGA_R);
     vect_add(tmp2, e, tmp2, VEC_N_SIZE_64);
     vect_add(tmp2, tmp1, tmp2, VEC_N_SIZE_64);
     vect_add(tmp2, mask_v, tmp2, VEC_N_SIZE_64);
@@ -159,38 +160,18 @@ void hqc_pke_decrypt(uint64_t *m, const uint64_t *u, const uint64_t *v, const un
     uint64_t tmp1[VEC_N_SIZE_64] = {0};
     uint64_t tmp2[VEC_N_SIZE_64] = {0};
     uint64_t mask[VEC_N_SIZE_64];
-    seedexpander_state perm_seedexpander;
-    uint8_t perm_seed[SEED_BYTES] = {0};
 
 
     // Retrieve x, y, pk from secret key
     hqc_secret_key_from_string(x, y, pk, sk);
 
-    shake_prng(perm_seed, SEED_BYTES);
-    seedexpander_init(&perm_seedexpander, perm_seed, SEED_BYTES);
-
     // Compute v - u.y
-#ifdef CONST
-    #ifdef CROSSCOMPILE
-        mul_start = (*(uint32_t *)0xE0001004);
-    #else
-        mul_start = rdtsc();
-    #endif
-#endif
     vect_resize(tmp1, PARAM_N, v, PARAM_N1N2);
-    safe_mul(tmp2, mask, y, u, PARAM_OMEGA, &perm_seedexpander);
+    safe_mul(tmp2, mask, y, u, PARAM_OMEGA);
     vect_add(tmp2, tmp1, tmp2, VEC_N_SIZE_64);
 
     // remove the mask
     vect_add(tmp2, tmp2, mask, VEC_N_SIZE_64);
-
-#ifdef CONST
-    #ifdef CROSSCOMPILE
-        mul_end = (*(uint32_t *)0xE0001004);
-    #else
-        mul_end = rdtsc();
-    #endif
-#endif
 
 #ifdef VERBOSE
         printf("\n\nu: "); vect_print(u, VEC_N_SIZE_BYTES);

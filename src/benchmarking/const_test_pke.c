@@ -36,10 +36,6 @@ int main() {
     uint8_t sk_seed[SEED_BYTES] = {0};
     uint64_t mulres[VEC_N_SIZE_64] = {0};
     uint64_t mulmask[VEC_N_SIZE_64] = {0};
-    seedexpander_state perm_seedexpander, perm_seedexpander_0;
-    uint8_t perm_seed[SEED_BYTES] = {0};
-
-
 
     // timers declaration
     uint32_t start, end;
@@ -64,10 +60,6 @@ int main() {
     memcpy(sk_seed, sk_0, SEED_BYTES);
     seedexpander_init(&sk_seedexpander, sk_seed, SEED_BYTES);
     vect_set_random_fixed_weight_by_coordinates(&sk_seedexpander, y_0, PARAM_OMEGA);
-    shake_prng(perm_seed, SEED_BYTES);
-    seedexpander_init(&perm_seedexpander_0, perm_seed, SEED_BYTES);
-
-
 
 
 #ifdef CROSSCOMPILE
@@ -82,15 +74,15 @@ int main() {
         welford_update(&enc_timer_0, ((long double) (end - start)));
 
         start = rdtsc();
-        safe_mul(mulres, mulmask, y_0, u, PARAM_OMEGA, &perm_seedexpander_0);
+        safe_mul(mulres, mulmask, y_0, u, PARAM_OMEGA);
         end = rdtsc();
         welford_update(&mul_timer_0, ((long double) (end - start)));
-/*
+
         start = rdtsc();
         hqc_pke_decrypt(m_0, u, v, sk_0);
         end = rdtsc();
         welford_update(&dec_timer_0, ((long double) (end - start)));
-*/
+
 
         vect_set_random_from_prng(m);
         shake256_512_ds(&shake256state, theta, (uint8_t*) m, VEC_K_SIZE_BYTES, G_FCT_DOMAIN);
@@ -102,18 +94,16 @@ int main() {
         memcpy(sk_seed, sk, SEED_BYTES);
         seedexpander_init(&sk_seedexpander, sk_seed, SEED_BYTES);
         vect_set_random_fixed_weight_by_coordinates(&sk_seedexpander, y, PARAM_OMEGA);
-        shake_prng(perm_seed, SEED_BYTES);
-        seedexpander_init(&perm_seedexpander, perm_seed, SEED_BYTES);
         start = rdtsc();
-        safe_mul(mulres, mulmask, y, u, PARAM_OMEGA, &perm_seedexpander);
+        safe_mul(mulres, mulmask, y, u, PARAM_OMEGA);
         end = rdtsc();
         welford_update(&mul_timer, ((long double) (end - start)));
-/*
+
         start = rdtsc();
         hqc_pke_decrypt(m, u, v, sk);
         end = rdtsc();
         welford_update(&dec_timer, ((long double) (end - start)));
-*/
+
     }
 
 
