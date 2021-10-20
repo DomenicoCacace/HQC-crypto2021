@@ -1,3 +1,2 @@
-commit, enc_tstat, dec_tstat, synmul_tstat
-23d0c67, -24.398138, -31.833674, -30.924959
-cf625e7, -27.457171, 19.013526, -0.379612
+commit, encaps_tstat, decaps_tstat, enc_tstat, dec_tstat, mul_tstat
+ad94c09, 0.936661, -4.5664850, 25.661776, -10.264492, -30.094201

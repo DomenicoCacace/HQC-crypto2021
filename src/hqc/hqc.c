@@ -11,13 +11,6 @@
 #include "../fields/gf2x.h"
 #include "hqc.h"
 
-#ifdef CONST
-    extern uint32_t mul_start, mul_end;
-    #ifndef CROSSCOMPILE
-        #include "../benchmarking/timing_stats.h"
-    #endif
-#endif
-
 #ifdef VERBOSE
     #include <stdio.h>
 #endif
