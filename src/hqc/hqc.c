@@ -11,13 +11,6 @@
 #include "../fields/gf2x.h"
 #include "hqc.h"
 
-#ifdef CONST
-    extern uint32_t mul_start, mul_end;
-    #ifndef CROSSCOMPILE
-        #include "../benchmarking/timing_stats.h"
-    #endif
-#endif
-
 #ifdef VERBOSE
     #include <stdio.h>
 #endif
@@ -167,23 +160,9 @@ void hqc_pke_decrypt(uint64_t *m, const uint64_t *u, const uint64_t *v, const un
     seedexpander_init(&perm_seedexpander, perm_seed, SEED_BYTES);
 
     // Compute v - u.y
-#ifdef CONST
-    #ifdef CROSSCOMPILE
-        mul_start = (*(uint32_t *)0xE0001004);
-    #else
-        mul_start = rdtsc();
-    #endif
-#endif
     vect_resize(tmp1, PARAM_N, v, PARAM_N1N2);
     vect_mul(tmp2, y, u, PARAM_OMEGA, &perm_seedexpander);
     vect_add(tmp2, tmp1, tmp2, VEC_N_SIZE_64);
-#ifdef CONST
-    #ifdef CROSSCOMPILE
-        mul_end = (*(uint32_t *)0xE0001004);
-    #else
-        mul_end = rdtsc();
-    #endif
-#endif
 
 #ifdef VERBOSE
         printf("\n\nu: "); vect_print(u, VEC_N_SIZE_BYTES);
