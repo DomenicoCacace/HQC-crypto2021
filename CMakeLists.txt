@@ -76,11 +76,13 @@ set(HEADERS ${HEADERS}
 
 if(${MODE} STREQUAL "FUNCTIONAL")
 	add_executable(${TARGET_NAME} ${HEADERS} ${SOURCES} ${BASE_DIR}/benchmarking/functional_test.c)
-elseif(${MODE} STREQUAL "TIMING")
-	add_executable(${TARGET_NAME} ${HEADERS} ${SOURCES} ${BASE_DIR}/benchmarking/timing_test.c)
+elseif(${MODE} STREQUAL "TIMING-PKE")
+	add_executable(${TARGET_NAME} ${HEADERS} ${SOURCES} ${BASE_DIR}/benchmarking/timing_test_pke.c)
+elseif(${MODE} STREQUAL "TIMING-KEM")
+	add_executable(${TARGET_NAME} ${HEADERS} ${SOURCES} ${BASE_DIR}/benchmarking/timing_test_kem.c)
 else()
 	error("PLEASE SPECIFY A TARGET")
-endif ()
+endif()
 
 set(FLAGS "${FLAGS} -DSECURITY_LEVEL=${SECLVL}")
 
