@@ -11,6 +11,6 @@ with open("pke") as f:
 out = out + ", " + str(lines[4]) + ", " + str(lines[7]) + ", " + str(lines[10]) + "\n"
 
 print(out)
-#file = open("../report/timing.csv", "a")
-#file.write(out)
-#file.close()
+file = open("../report/timing.csv", "a")
+file.write(out)
+file.close()
