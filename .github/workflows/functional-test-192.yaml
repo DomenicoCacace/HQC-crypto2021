@@ -15,19 +15,49 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DSECLVL=192 -DMODE="FUNCTIONAL" -DCROSSCOMPILE=0 -DVERBOSE=0
-      
-    - name: make executable
-      run:  |
-        cd build/
-        make hqc-192-native
-    
-    - name: Execute functional test
-      run:  |
-        cd build/
-        chmod +x hqc-192-native
-        ./hqc-192-native
+      - name: Configure CMake - 2 shares
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DSECLVL=192 -DMASKLVL=1 -DMODE="FUNCTIONAL" -DCROSSCOMPILE=0 -DVERBOSE=0
+
+      - name: Make executable - 2 shares
+        run:  |
+          cd build/
+          make hqc-192-native
+
+      - name: Execute functional test - 2 shares
+        run:  |
+          cd build/
+          chmod +x hqc-192-native
+          ./hqc-192-native
+
+
+      - name: Configure CMake - 4 shares
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DSECLVL=192 -DMASKLVL=2 -DMODE="FUNCTIONAL" -DCROSSCOMPILE=0 -DVERBOSE=0
+
+      - name: Make executable - 4 shares
+        run: |
+          cd build/
+          make hqc-192-native
+
+      - name: Execute functional test - 4 shares
+        run: |
+          cd build/
+          chmod +x hqc-192-native
+          ./hqc-192-native
+
+
+      - name: Configure CMake - 8 shares
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DSECLVL=192 -DMASKLVL=3 -DMODE="FUNCTIONAL" -DCROSSCOMPILE=0 -DVERBOSE=0
+
+      - name: Make executable - 8 shares
+        run:  |
+          cd build/
+          make hqc-192-native
+
+      - name: Execute functional test - 8 shares
+        run:  |
+          cd build/
+          chmod +x hqc-192-native
+          ./hqc-192-native
       

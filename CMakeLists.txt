@@ -62,6 +62,7 @@ set(HEADERS ${HEADERS}
 			${BASE_DIR}/fields/fft.h
 			${BASE_DIR}/fields/gf.h
 			${BASE_DIR}/fields/gf2x.h
+			${BASE_DIR}/fields/shares.h
 			${BASE_DIR}/hqc/hqc.h
 			${BASE_DIR}/common/parsing.h
 			${BASE_DIR}/codes/reed_muller.h
@@ -90,7 +91,7 @@ else()
 	error("PLEASE SPECIFY A TARGET")
 endif()
 
-set(FLAGS "${FLAGS} -DSECURITY_LEVEL=${SECLVL}")
+set(FLAGS "${FLAGS} -DSECURITY_LEVEL=${SECLVL} -DMASK_LVL=${MASKLVL}")
 
 # Set the verbosity level
 if(${VERBOSE} STREQUAL "1")
