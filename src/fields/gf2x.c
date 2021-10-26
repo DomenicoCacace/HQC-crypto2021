@@ -78,17 +78,16 @@ static void fast_convolution_mult(uint64_t *o, const uint32_t *a1, const uint64_
     uint16_t permutation_table[TABLE];
     uint16_t permuted_sparse_vect[weight];
     uint16_t permutation_sparse_vect[weight];
-    uint64_t tmp;
 
-    for (size_t i = 0; i < TABLE; i++)
+    /*for (size_t i = 0; i < TABLE; i++)
         permuted_table[i] = (uint16_t) i;
 
     seedexpander(ctx, (uint8_t *) permutation_table, TABLE << 1);
 
     for (size_t i = 0; i < TABLE - 1; i++)
         swap(permuted_table + i, 0, permutation_table[i] % (TABLE - i));
-
-    uint64_t *pt = table + (permuted_table[0] * (size + 1));
+*/
+    uint64_t *pt = table;// + (permuted_table[0] * (size + 1));
 
     for (size_t i = 0 ; i < size ; i++)
         pt[i] = a2[i];
@@ -96,7 +95,7 @@ static void fast_convolution_mult(uint64_t *o, const uint32_t *a1, const uint64_
 
     for (size_t i = 1; i < TABLE; i++) {
         carry = 0x0UL;
-        int32_t idx = permuted_table[i] * (size + 1);
+        int32_t idx = /*permuted_table[i]*/i * (size + 1);
         uint64_t *pt = table + idx;
 
         for (size_t j = 0; j < size; j++) {
@@ -107,25 +106,25 @@ static void fast_convolution_mult(uint64_t *o, const uint32_t *a1, const uint64_
         pt[size] = carry;
     }
 
-    for (size_t i = 0; i < weight; i++)
+    /*for (size_t i = 0; i < weight; i++)
         permuted_sparse_vect[i] = (uint16_t) i;
 
     seedexpander(ctx, (uint8_t *) permutation_sparse_vect, weight << 1);
 
     for (int32_t i = 0; i < (weight - 1); i++)
         swap(permuted_sparse_vect + i, 0, permutation_sparse_vect[i] % (weight - i));
-
+*/
 
     for (size_t i = 0; i < weight; i++) {
-        dec = a1[permuted_sparse_vect[i]] & 0xf;
-        s = a1[permuted_sparse_vect[i]] >> 4;
+        dec = a1[/*permuted_sparse_vect[i]*/i] & 0xf;
+        s = a1[/*permuted_sparse_vect[i]*/i] >> 4;
 
         uint16_t *res_16 = (uint16_t *) o;
         res_16 += s;
-        uint64_t *pt = table + (permuted_table[dec] * (size + 1));
+        uint64_t *pt = table + (/*permuted_table[dec]*/dec * (size + 1));
 
         for (size_t j = 0; j < size + 1; j++) {
-            tmp = (uint64_t) res_16[0] | ((uint64_t) (res_16[1])) << 16 |
+            uint64_t tmp = (uint64_t) res_16[0] | ((uint64_t) (res_16[1])) << 16 |
                            (uint64_t) (res_16[2]) << 32 | ((uint64_t) (res_16[3])) << 48;
             tmp ^= pt[j];
             memcpy(res_16, &tmp, 8);
@@ -205,15 +204,13 @@ void safe_mul(uint64_t *o, uint64_t *mask, uint32_t *a1, const uint64_t *a2, con
     uint8_t seed[SEED_BYTES];
     seedexpander_state ctx;
 
-    // Get randomness for masking
     shake_prng(seed, SEED_BYTES);
-    seedexpander_init(&mask_seedexpander, seed, SEED_BYTES);
-
+    seedexpander_init(&ctx, seed, SEED_BYTES);
 
     for(int i = 0; i < MASKS; i++) {
         reset(raw_temp);
-        shake_prng(seed, SEED_BYTES);
-        seedexpander_init(&ctx, seed, SEED_BYTES);
+        //shake_prng(seed, SEED_BYTES);
+        //seedexpander_init(&ctx, seed, SEED_BYTES);
         fast_convolution_mult(raw_temp+(i*(VEC_N_SIZE_64/MASKS)),
                               a1+i*(weight/MASKS), a2+(i*(VEC_N_SIZE_64/MASKS)),
                               shares_size(i, weight), shares_size(i, VEC_N_SIZE_64), &ctx);
@@ -225,10 +222,11 @@ void safe_mul(uint64_t *o, uint64_t *mask, uint32_t *a1, const uint64_t *a2, con
             shake_prng(seed, SEED_BYTES);
             seedexpander_init(&mask_seedexpander, seed, SEED_BYTES);
             vect_set_random_fixed_weight(&mask_seedexpander, s, weight);
+            shake_prng((uint8_t *)s, VEC_N_SIZE_BYTES);
 
             reset(raw_temp);
-            shake_prng(seed, SEED_BYTES);
-            seedexpander_init(&ctx, seed, SEED_BYTES);
+            //shake_prng(seed, SEED_BYTES);
+            //seedexpander_init(&ctx, seed, SEED_BYTES);
             fast_convolution_mult(raw_temp+(j*(VEC_N_SIZE_64/MASKS)),
                                   a1+(i*(weight/MASKS)), a2+(j*(VEC_N_SIZE_64/MASKS)),
                                   shares_size(i, weight), shares_size(j, VEC_N_SIZE_64), &ctx);
@@ -236,8 +234,8 @@ void safe_mul(uint64_t *o, uint64_t *mask, uint32_t *a1, const uint64_t *a2, con
             vect_add(temp1, temp1, s, VEC_N_SIZE_64);
 
             reset(raw_temp);
-            shake_prng(seed, SEED_BYTES);
-            seedexpander_init(&ctx, seed, SEED_BYTES);
+            //shake_prng(seed, SEED_BYTES);
+            //seedexpander_init(&ctx, seed, SEED_BYTES);
             fast_convolution_mult(raw_temp+(i*(VEC_N_SIZE_64/MASKS)),
                                   a1+(j*(weight/MASKS)), a2+(i*(VEC_N_SIZE_64/MASKS)),
                                   shares_size(j, weight), shares_size(i, VEC_N_SIZE_64), &ctx);
