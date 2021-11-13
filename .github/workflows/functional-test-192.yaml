@@ -67,7 +67,7 @@ jobs:
           ./hqc-192-native
 
       - name: Configure CMake - 5 shares
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DSECLVL=192 -DMASKLVL=5 -DMODE="FUNCTIONAL" -DCROSSCOMPILE=0 -DVERBOSE=
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DSECLVL=192 -DMASKLVL=5 -DMODE="FUNCTIONAL" -DCROSSCOMPILE=0 -DVERBOSE=0
       - name: Make executable - 5 shares
         run:  |
           cd build/
