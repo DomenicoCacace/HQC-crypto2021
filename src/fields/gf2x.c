@@ -9,31 +9,12 @@
 #include "../common/parameters.h"
 #include "../common/vector.h"
 #include "gf2x.h"
-#include "shares.h"
 
 #define TABLE 16
 #define WORD 64
 
-static inline void swap(uint16_t *tab, uint16_t elt1, uint16_t elt2);
 static void reduce(uint64_t *o, const uint64_t *a);
-static void fast_convolution_mult(uint64_t *o, const uint32_t *a1, const uint64_t *a2, const uint16_t weight, const uint16_t size, seedexpander_state *ctx);
-
-/**
- * @brief swap two elements in a table
- *
- * This function exchanges tab[elt1] with tab[elt2]
- *
- * @param[in] tab Pointer to the table
- * @param[in] elt1 Index of the first element
- * @param[in] elt2 Index of the second element
- */
-static inline void swap(uint16_t *tab, uint16_t elt1, uint16_t elt2) {
-    uint16_t tmp = tab[elt1];
-
-    tab[elt1] = tab[elt2];
-    tab[elt2] = tmp;
-}
-
+static void fast_convolution_mult(uint64_t *o, const uint32_t *a1, const uint64_t *a2, uint16_t weight, uint16_t size);
 
 
 /**
@@ -68,65 +49,33 @@ static void reduce(uint64_t *o, const uint64_t *a) {
  * @param[in] a1 Pointer to the sparse polynomial a2 (list of degrees of the monomials which appear in a2)
  * @param[in] a2 Pointer to the polynomial a1(x)
  * @param[in] weight Hamming wifht of the sparse polynomial a2
- * @param[in] ctx Pointer to a seed expander used to randomize the multiplication process
  */
-static void fast_convolution_mult(uint64_t *o, const uint32_t *a1, const uint64_t *a2, const uint16_t weight, const uint16_t size, seedexpander_state *ctx){
+static void fast_convolution_mult(uint64_t *o, const uint32_t *a1, const uint64_t *a2, const uint16_t weight, const uint16_t size){
     uint64_t carry;
-    int32_t dec, s;
+    uint64_t tmp;
     uint64_t table[TABLE * (size + 1)];
-    uint16_t permuted_table[TABLE];
-    uint16_t permutation_table[TABLE];
-    uint16_t permuted_sparse_vect[weight];
-    uint16_t permutation_sparse_vect[weight];
 
-    /*for (size_t i = 0; i < TABLE; i++)
-        permuted_table[i] = (uint16_t) i;
 
-    seedexpander(ctx, (uint8_t *) permutation_table, TABLE << 1);
-
-    for (size_t i = 0; i < TABLE - 1; i++)
-        swap(permuted_table + i, 0, permutation_table[i] % (TABLE - i));
-*/
-    uint64_t *pt = table;// + (permuted_table[0] * (size + 1));
-
-    for (size_t i = 0 ; i < size ; i++)
-        pt[i] = a2[i];
-    pt[size] = 0x0UL;
+    memcpy(table, a2, size*sizeof(uint64_t));
+    table[size] = 0x0UL;
 
     for (size_t i = 1; i < TABLE; i++) {
         carry = 0x0UL;
-        int32_t idx = /*permuted_table[i]*/i * (size + 1);
-        uint64_t *pt = table + idx;
 
         for (size_t j = 0; j < size; j++) {
-            pt[j] = (a2[j] << i) ^ carry;
+            table[i*(size+1)+j] = (a2[j] << i) ^ carry;
             carry = (a2[j] >> ((WORD - i)));
         }
-
-        pt[size] = carry;
+        table[i*(size+1)+size] = carry;
     }
 
-    /*for (size_t i = 0; i < weight; i++)
-        permuted_sparse_vect[i] = (uint16_t) i;
-
-    seedexpander(ctx, (uint8_t *) permutation_sparse_vect, weight << 1);
-
-    for (int32_t i = 0; i < (weight - 1); i++)
-        swap(permuted_sparse_vect + i, 0, permutation_sparse_vect[i] % (weight - i));
-*/
-
     for (size_t i = 0; i < weight; i++) {
-        dec = a1[/*permuted_sparse_vect[i]*/i] & 0xf;
-        s = a1[/*permuted_sparse_vect[i]*/i] >> 4;
-
-        uint16_t *res_16 = (uint16_t *) o;
-        res_16 += s;
-        uint64_t *pt = table + (/*permuted_table[dec]*/dec * (size + 1));
+        uint16_t *res_16 = (uint16_t *) o+(a1[i] >> 4);
 
         for (size_t j = 0; j < size + 1; j++) {
-            uint64_t tmp = (uint64_t) res_16[0] | ((uint64_t) (res_16[1])) << 16 |
+            tmp = (uint64_t) res_16[0] | ((uint64_t) (res_16[1])) << 16 |
                            (uint64_t) (res_16[2]) << 32 | ((uint64_t) (res_16[3])) << 48;
-            tmp ^= pt[j];
+            tmp ^= table[((a1[i] & 0xf) * (size + 1))+j];
             memcpy(res_16, &tmp, 8);
             res_16 += 4;
         }
@@ -146,16 +95,10 @@ static void fast_convolution_mult(uint64_t *o, const uint32_t *a1, const uint64_
  * @param[in] weight Integer that is the weigt of the sparse polynomial
  * @param[in] ctx Pointer to the randomness context
  */
-void vect_mul(uint64_t *o, const uint32_t *a1, const uint64_t *a2, const uint16_t weight) {
+void vect_mul(uint64_t *o, const uint32_t *a1, const uint64_t *a2, uint16_t weight) {
     uint64_t tmp[(VEC_N_SIZE_64 << 1) + 1] = {0};
 
-    uint8_t seed[SEED_BYTES];
-    seedexpander_state ctx;
-
-    shake_prng(seed, SEED_BYTES);
-    seedexpander_init(&ctx, seed, SEED_BYTES);
-
-    fast_convolution_mult(tmp, a1, a2, weight, VEC_N_SIZE_64, &ctx);
+    fast_convolution_mult(tmp, a1, a2, weight, VEC_N_SIZE_64);
     reduce(o, tmp);
 }
 
@@ -167,8 +110,7 @@ void vect_mul(uint64_t *o, const uint32_t *a1, const uint64_t *a2, const uint16_
  */
 static inline
 void reset(uint64_t *vec) {
-    for(int i = 0; i < (VEC_N_SIZE_64<<1)+1; i++)
-        vec[i]=0;
+    memset(vec, 0x00, ((VEC_N_SIZE_64<<1)+1)*8);
 }
 
 
@@ -183,16 +125,12 @@ void reset(uint64_t *vec) {
  * @param[in] a1 Pointer to the sparse polynomial
  * @param[in] a2 Pointer to the dense polynomial
  * @param[in] weight Integer that is the weight of the sparse polynomial
- * @param[in] ctx Pointer to the randomness context
  */
-void safe_mul(uint64_t *o, uint64_t *mask, uint32_t *a1, const uint64_t *a2, const uint16_t weight) {
+void safe_mul(shares_t *o, const uint32_t *a1, const uint64_t *a2, uint16_t weight) {
 #ifdef VERBOSE
     printf("\nsparse_in: ");
     for(int i=0;i<PARAM_OMEGA;i++) printf("%x ", a1[i]);
 #endif
-
-    shares_t shares;
-
     uint64_t temp1[VEC_N_SIZE_64] = {0};
     uint64_t temp2[VEC_N_SIZE_64] = {0};
     uint64_t raw_temp[(VEC_N_SIZE_64 << 1) + 1];
@@ -202,50 +140,754 @@ void safe_mul(uint64_t *o, uint64_t *mask, uint32_t *a1, const uint64_t *a2, con
 
     seedexpander_state mask_seedexpander;
     uint8_t seed[SEED_BYTES];
-    seedexpander_state ctx;
+
+#if MASKS == 1
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(0*(VEC_N_SIZE_64/1)),
+                          a1+(0*(weight/1)), a2+(0*(VEC_N_SIZE_64/1)),
+                          weight - (weight/1)*0, VEC_N_SIZE_64 - (VEC_N_SIZE_64/1)*0);
+    reduce(o->s0, raw_temp);
+#elif MASKS == 2
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(0*(VEC_N_SIZE_64/2)),
+                          a1+(0*(weight/2)), a2+(0*(VEC_N_SIZE_64/2)),
+                          weight/2, VEC_N_SIZE_64/2);
+    reduce(o->s0, raw_temp);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(1*(VEC_N_SIZE_64/2)),
+                          a1+(1*(weight/2)), a2+(1*(VEC_N_SIZE_64/2)),
+                          weight - (weight/2)*1, VEC_N_SIZE_64 - (VEC_N_SIZE_64/2)*1);
+    reduce(o->s1, raw_temp);
+#elif MASKS == 3
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(0*(VEC_N_SIZE_64/3)),
+                          a1+(0*(weight/3)), a2+(0*(VEC_N_SIZE_64/3)),
+                          weight/3, VEC_N_SIZE_64/3);
+    reduce(o->s0, raw_temp);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(1*(VEC_N_SIZE_64/3)),
+                          a1+(1*(weight/3)), a2+(1*(VEC_N_SIZE_64/3)),
+                          weight/3, VEC_N_SIZE_64/3);
+    reduce(o->s1, raw_temp);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(2*(VEC_N_SIZE_64/3)),
+                          a1+(2*(weight/3)), a2+(2*(VEC_N_SIZE_64/3)),
+                          weight - (weight/3)*2, VEC_N_SIZE_64 - (VEC_N_SIZE_64/3)*2);
+    reduce(o->s2, raw_temp);
+#elif MASKS == 4
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(0*(VEC_N_SIZE_64/4)),
+                          a1+(0*(weight/4)), a2+(0*(VEC_N_SIZE_64/4)),
+                          weight/4, VEC_N_SIZE_64/4);
+    reduce(o->s0, raw_temp);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(1*(VEC_N_SIZE_64/4)),
+                          a1+(1*(weight/4)), a2+(1*(VEC_N_SIZE_64/4)),
+                          weight/4, VEC_N_SIZE_64/4);
+    reduce(o->s1, raw_temp);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(2*(VEC_N_SIZE_64/4)),
+                          a1+(2*(weight/4)), a2+(2*(VEC_N_SIZE_64/4)),
+                          weight/4, VEC_N_SIZE_64/4);
+    reduce(o->s2, raw_temp);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(3*(VEC_N_SIZE_64/4)),
+                          a1+(3*(weight/4)), a2+(3*(VEC_N_SIZE_64/4)),
+                          weight - (weight/4)*3, VEC_N_SIZE_64 - (VEC_N_SIZE_64/4)*3);
+    reduce(o->s3, raw_temp);
+#elif MASKS == 5
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(0*(VEC_N_SIZE_64/5)),
+                          a1+(0*(weight/5)), a2+(0*(VEC_N_SIZE_64/5)),
+                          weight/5, VEC_N_SIZE_64/5);
+    reduce(o->s0, raw_temp);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(1*(VEC_N_SIZE_64/5)),
+                          a1+(1*(weight/5)), a2+(1*(VEC_N_SIZE_64/5)),
+                          weight/5, VEC_N_SIZE_64/5);
+    reduce(o->s1, raw_temp);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(2*(VEC_N_SIZE_64/5)),
+                          a1+(2*(weight/5)), a2+(2*(VEC_N_SIZE_64/5)),
+                          weight/5, VEC_N_SIZE_64/5);
+    reduce(o->s2, raw_temp);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(3*(VEC_N_SIZE_64/5)),
+                          a1+(3*(weight/5)), a2+(3*(VEC_N_SIZE_64/5)),
+                          weight/5, VEC_N_SIZE_64/5);
+    reduce(o->s3, raw_temp);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(4*(VEC_N_SIZE_64/5)),
+                          a1+(4*(weight/5)), a2+(4*(VEC_N_SIZE_64/5)),
+                          weight - (weight/5)*4, VEC_N_SIZE_64 - (VEC_N_SIZE_64/5)*4);
+    reduce(o->s4, raw_temp);
+#elif MASKS == 6
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(0*(VEC_N_SIZE_64/6)),
+                          a1+(0*(weight/6)), a2+(0*(VEC_N_SIZE_64/6)),
+                          weight/6, VEC_N_SIZE_64/6);
+    reduce(o->s0, raw_temp);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(1*(VEC_N_SIZE_64/6)),
+                          a1+(1*(weight/6)), a2+(1*(VEC_N_SIZE_64/6)),
+                          weight/6, VEC_N_SIZE_64/6);
+    reduce(o->s1, raw_temp);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(2*(VEC_N_SIZE_64/6)),
+                          a1+(2*(weight/6)), a2+(2*(VEC_N_SIZE_64/6)),
+                          weight/6, VEC_N_SIZE_64/6);
+    reduce(o->s2, raw_temp);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(3*(VEC_N_SIZE_64/6)),
+                          a1+(3*(weight/6)), a2+(3*(VEC_N_SIZE_64/6)),
+                          weight/6, VEC_N_SIZE_64/6);
+    reduce(o->s3, raw_temp);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(4*(VEC_N_SIZE_64/6)),
+                          a1+(4*(weight/6)), a2+(4*(VEC_N_SIZE_64/6)),
+                          weight/6, VEC_N_SIZE_64/6);
+    reduce(o->s4, raw_temp);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(5*(VEC_N_SIZE_64/6)),
+                          a1+(5*(weight/6)), a2+(5*(VEC_N_SIZE_64/6)),
+                          weight - (weight/6)*5, VEC_N_SIZE_64 - (VEC_N_SIZE_64/6)*5);
+    reduce(o->s5, raw_temp);
+#endif
+
+// PART 2
+
+#if MASKS == 1
+    // nothing, no masking applied
+#elif MASKS == 2
+    shake_prng(seed, SEED_BYTES);
+    seedexpander_init(&mask_seedexpander, seed, SEED_BYTES);
+    vect_set_random_fixed_weight(&mask_seedexpander, s, weight);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(1*(VEC_N_SIZE_64/2)),
+                          a1+(0*(weight/2)), a2+(1*(VEC_N_SIZE_64/2)),
+                          weight/2, VEC_N_SIZE_64 - (VEC_N_SIZE_64/2)*1);
+    reduce(temp1, raw_temp);
+    vect_add(temp1, temp1, s, VEC_N_SIZE_64);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(0*(VEC_N_SIZE_64/2)),
+                          a1+(1*(weight/2)), a2+(0*(VEC_N_SIZE_64/2)),
+                          weight - (weight/2)*1, VEC_N_SIZE_64/2);
+    reduce(temp2, raw_temp);
+    vect_add(s1, temp1, temp2, VEC_N_SIZE_64);
+    vect_add(o->s0, o->s0, s, VEC_N_SIZE_64);
+    vect_add(o->s1, o->s1, s1, VEC_N_SIZE_64);
+
+#elif MASKS == 3
+    shake_prng(seed, SEED_BYTES);
+    seedexpander_init(&mask_seedexpander, seed, SEED_BYTES);
+    vect_set_random_fixed_weight(&mask_seedexpander, s, weight);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(1*(VEC_N_SIZE_64/3)),
+                          a1+(0*(weight/3)), a2+(1*(VEC_N_SIZE_64/3)),
+                          weight/3, VEC_N_SIZE_64/3);
+    reduce(temp1, raw_temp);
+    vect_add(temp1, temp1, s, VEC_N_SIZE_64);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(0*(VEC_N_SIZE_64/3)),
+                          a1+(1*(weight/3)), a2+(0*(VEC_N_SIZE_64/3)),
+                          weight/3, VEC_N_SIZE_64/3);
+    reduce(temp2, raw_temp);
+    vect_add(s1, temp1, temp2, VEC_N_SIZE_64);
+    vect_add(o->s0, o->s0, s, VEC_N_SIZE_64);
+    vect_add(o->s1, o->s1, s1, VEC_N_SIZE_64);
 
     shake_prng(seed, SEED_BYTES);
-    seedexpander_init(&ctx, seed, SEED_BYTES);
+    seedexpander_init(&mask_seedexpander, seed, SEED_BYTES);
+    vect_set_random_fixed_weight(&mask_seedexpander, s, weight);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(2*(VEC_N_SIZE_64/3)),
+                          a1+(0*(weight/3)), a2+(2*(VEC_N_SIZE_64/3)),
+                          weight/3, VEC_N_SIZE_64 - (VEC_N_SIZE_64/3)*2);
+    reduce(temp1, raw_temp);
+    vect_add(temp1, temp1, s, VEC_N_SIZE_64);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(0*(VEC_N_SIZE_64/3)),
+                          a1+(2*(weight/3)), a2+(0*(VEC_N_SIZE_64/3)),
+                          weight - (weight/3)*2, VEC_N_SIZE_64/3);
+    reduce(temp2, raw_temp);
+    vect_add(s1, temp1, temp2, VEC_N_SIZE_64);
+    vect_add(o->s0, o->s0, s, VEC_N_SIZE_64);
+    vect_add(o->s2, o->s2, s1, VEC_N_SIZE_64);
 
-    for(int i = 0; i < MASKS; i++) {
-        reset(raw_temp);
-        //shake_prng(seed, SEED_BYTES);
-        //seedexpander_init(&ctx, seed, SEED_BYTES);
-        fast_convolution_mult(raw_temp+(i*(VEC_N_SIZE_64/MASKS)),
-                              a1+i*(weight/MASKS), a2+(i*(VEC_N_SIZE_64/MASKS)),
-                              shares_size(i, weight), shares_size(i, VEC_N_SIZE_64), &ctx);
-        reduce(shares.share[i], raw_temp);
-    }
+    shake_prng(seed, SEED_BYTES);
+    seedexpander_init(&mask_seedexpander, seed, SEED_BYTES);
+    vect_set_random_fixed_weight(&mask_seedexpander, s, weight);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(2*(VEC_N_SIZE_64/3)),
+                          a1+(1*(weight/3)), a2+(2*(VEC_N_SIZE_64/3)),
+                          weight/3, VEC_N_SIZE_64 - (VEC_N_SIZE_64/3)*2);
+    reduce(temp1, raw_temp);
+    vect_add(temp1, temp1, s, VEC_N_SIZE_64);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(1*(VEC_N_SIZE_64/3)),
+                          a1+(2*(weight/3)), a2+(1*(VEC_N_SIZE_64/3)),
+                          weight - (weight/3)*2, VEC_N_SIZE_64/3);
+    reduce(temp2, raw_temp);
+    vect_add(s1, temp1, temp2, VEC_N_SIZE_64);
+    vect_add(o->s1, o->s1, s, VEC_N_SIZE_64);
+    vect_add(o->s2, o->s2, s1, VEC_N_SIZE_64);
+#elif MASKS == 4
+    shake_prng(seed, SEED_BYTES);
+    seedexpander_init(&mask_seedexpander, seed, SEED_BYTES);
+    vect_set_random_fixed_weight(&mask_seedexpander, s, weight);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(1*(VEC_N_SIZE_64/4)),
+                          a1+(0*(weight/4)), a2+(1*(VEC_N_SIZE_64/4)),
+                          weight/4, VEC_N_SIZE_64/4);
+    reduce(temp1, raw_temp);
+    vect_add(temp1, temp1, s, VEC_N_SIZE_64);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(0*(VEC_N_SIZE_64/4)),
+                          a1+(1*(weight/4)), a2+(0*(VEC_N_SIZE_64/4)),
+                          weight/4, VEC_N_SIZE_64/4);
+    reduce(temp2, raw_temp);
+    vect_add(s1, temp1, temp2, VEC_N_SIZE_64);
+    vect_add(o->s0, o->s0, s, VEC_N_SIZE_64);
+    vect_add(o->s1, o->s1, s1, VEC_N_SIZE_64);
 
-    for(int i = 0; i < MASKS; i++) {
-        for(int j = i+1; j < MASKS; j++) {
-            shake_prng(seed, SEED_BYTES);
-            seedexpander_init(&mask_seedexpander, seed, SEED_BYTES);
-            vect_set_random_fixed_weight(&mask_seedexpander, s, weight);
-            shake_prng((uint8_t *)s, VEC_N_SIZE_BYTES);
+    shake_prng(seed, SEED_BYTES);
+    seedexpander_init(&mask_seedexpander, seed, SEED_BYTES);
+    vect_set_random_fixed_weight(&mask_seedexpander, s, weight);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(2*(VEC_N_SIZE_64/4)),
+                          a1+(0*(weight/4)), a2+(2*(VEC_N_SIZE_64/4)),
+                          weight/4, VEC_N_SIZE_64/4);
+    reduce(temp1, raw_temp);
+    vect_add(temp1, temp1, s, VEC_N_SIZE_64);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(0*(VEC_N_SIZE_64/4)),
+                          a1+(2*(weight/4)), a2+(0*(VEC_N_SIZE_64/4)),
+                          weight/4, VEC_N_SIZE_64/4);
+    reduce(temp2, raw_temp);
+    vect_add(s1, temp1, temp2, VEC_N_SIZE_64);
+    vect_add(o->s0, o->s0, s, VEC_N_SIZE_64);
+    vect_add(o->s2, o->s2, s1, VEC_N_SIZE_64);
 
-            reset(raw_temp);
-            //shake_prng(seed, SEED_BYTES);
-            //seedexpander_init(&ctx, seed, SEED_BYTES);
-            fast_convolution_mult(raw_temp+(j*(VEC_N_SIZE_64/MASKS)),
-                                  a1+(i*(weight/MASKS)), a2+(j*(VEC_N_SIZE_64/MASKS)),
-                                  shares_size(i, weight), shares_size(j, VEC_N_SIZE_64), &ctx);
-            reduce(temp1, raw_temp);
-            vect_add(temp1, temp1, s, VEC_N_SIZE_64);
+    shake_prng(seed, SEED_BYTES);
+    seedexpander_init(&mask_seedexpander, seed, SEED_BYTES);
+    vect_set_random_fixed_weight(&mask_seedexpander, s, weight);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(3*(VEC_N_SIZE_64/4)),
+                          a1+(0*(weight/4)), a2+(3*(VEC_N_SIZE_64/4)),
+                          weight/4, VEC_N_SIZE_64 - (VEC_N_SIZE_64/4)*3);
+    reduce(temp1, raw_temp);
+    vect_add(temp1, temp1, s, VEC_N_SIZE_64);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(0*(VEC_N_SIZE_64/4)),
+                          a1+(3*(weight/4)), a2+(0*(VEC_N_SIZE_64/4)),
+                          weight - (weight/4)*3, VEC_N_SIZE_64/4);
+    reduce(temp2, raw_temp);
+    vect_add(s1, temp1, temp2, VEC_N_SIZE_64);
+    vect_add(o->s0, o->s0, s, VEC_N_SIZE_64);
+    vect_add(o->s3, o->s3, s1, VEC_N_SIZE_64);
 
-            reset(raw_temp);
-            //shake_prng(seed, SEED_BYTES);
-            //seedexpander_init(&ctx, seed, SEED_BYTES);
-            fast_convolution_mult(raw_temp+(i*(VEC_N_SIZE_64/MASKS)),
-                                  a1+(j*(weight/MASKS)), a2+(i*(VEC_N_SIZE_64/MASKS)),
-                                  shares_size(j, weight), shares_size(i, VEC_N_SIZE_64), &ctx);
-            reduce(temp2, raw_temp);
-            vect_add(s1, temp1, temp2, VEC_N_SIZE_64);
+    shake_prng(seed, SEED_BYTES);
+    seedexpander_init(&mask_seedexpander, seed, SEED_BYTES);
+    vect_set_random_fixed_weight(&mask_seedexpander, s, weight);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(2*(VEC_N_SIZE_64/4)),
+                          a1+(1*(weight/4)), a2+(2*(VEC_N_SIZE_64/4)),
+                          weight/4, VEC_N_SIZE_64/4);
+    reduce(temp1, raw_temp);
+    vect_add(temp1, temp1, s, VEC_N_SIZE_64);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(1*(VEC_N_SIZE_64/4)),
+                          a1+(2*(weight/4)), a2+(1*(VEC_N_SIZE_64/4)),
+                          weight/4, VEC_N_SIZE_64/4);
+    reduce(temp2, raw_temp);
+    vect_add(s1, temp1, temp2, VEC_N_SIZE_64);
+    vect_add(o->s1, o->s1, s, VEC_N_SIZE_64);
+    vect_add(o->s2, o->s2, s1, VEC_N_SIZE_64);
 
-            vect_add(shares.share[i], shares.share[i], s, VEC_N_SIZE_64);
-            vect_add(shares.share[j], shares.share[j], s1, VEC_N_SIZE_64);
-        }
-    }
+    shake_prng(seed, SEED_BYTES);
+    seedexpander_init(&mask_seedexpander, seed, SEED_BYTES);
+    vect_set_random_fixed_weight(&mask_seedexpander, s, weight);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(3*(VEC_N_SIZE_64/4)),
+                          a1+(1*(weight/4)), a2+(3*(VEC_N_SIZE_64/4)),
+                          weight/4, VEC_N_SIZE_64 - (VEC_N_SIZE_64/4)*3);
+    reduce(temp1, raw_temp);
+    vect_add(temp1, temp1, s, VEC_N_SIZE_64);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(1*(VEC_N_SIZE_64/4)),
+                          a1+(3*(weight/4)), a2+(1*(VEC_N_SIZE_64/4)),
+                          weight - (weight/4)*3, VEC_N_SIZE_64/4);
+    reduce(temp2, raw_temp);
+    vect_add(s1, temp1, temp2, VEC_N_SIZE_64);
+    vect_add(o->s1, o->s1, s, VEC_N_SIZE_64);
+    vect_add(o->s3, o->s3, s1, VEC_N_SIZE_64);
 
-    shares_reduce(shares, o, mask);
+    shake_prng(seed, SEED_BYTES);
+    seedexpander_init(&mask_seedexpander, seed, SEED_BYTES);
+    vect_set_random_fixed_weight(&mask_seedexpander, s, weight);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(3*(VEC_N_SIZE_64/4)),
+                          a1+(2*(weight/4)), a2+(3*(VEC_N_SIZE_64/4)),
+                          weight/4, VEC_N_SIZE_64 - (VEC_N_SIZE_64/4)*3);
+    reduce(temp1, raw_temp);
+    vect_add(temp1, temp1, s, VEC_N_SIZE_64);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(2*(VEC_N_SIZE_64/4)),
+                          a1+(3*(weight/4)), a2+(2*(VEC_N_SIZE_64/4)),
+                          weight - (weight/4)*3, VEC_N_SIZE_64/4);
+    reduce(temp2, raw_temp);
+    vect_add(s1, temp1, temp2, VEC_N_SIZE_64);
+    vect_add(o->s2, o->s2, s, VEC_N_SIZE_64);
+    vect_add(o->s3, o->s3, s1, VEC_N_SIZE_64);
+#elif MASKS == 5
+    shake_prng(seed, SEED_BYTES);
+    seedexpander_init(&mask_seedexpander, seed, SEED_BYTES);
+    vect_set_random_fixed_weight(&mask_seedexpander, s, weight);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(1*(VEC_N_SIZE_64/5)),
+                          a1+(0*(weight/5)), a2+(1*(VEC_N_SIZE_64/5)),
+                          weight/5, VEC_N_SIZE_64/5);
+    reduce(temp1, raw_temp);
+    vect_add(temp1, temp1, s, VEC_N_SIZE_64);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(0*(VEC_N_SIZE_64/5)),
+                          a1+(1*(weight/5)), a2+(0*(VEC_N_SIZE_64/5)),
+                          weight/5, VEC_N_SIZE_64/5);
+    reduce(temp2, raw_temp);
+    vect_add(s1, temp1, temp2, VEC_N_SIZE_64);
+    vect_add(o->s0, o->s0, s, VEC_N_SIZE_64);
+    vect_add(o->s1, o->s1, s1, VEC_N_SIZE_64);
+
+    shake_prng(seed, SEED_BYTES);
+    seedexpander_init(&mask_seedexpander, seed, SEED_BYTES);
+    vect_set_random_fixed_weight(&mask_seedexpander, s, weight);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(2*(VEC_N_SIZE_64/5)),
+                          a1+(0*(weight/5)), a2+(2*(VEC_N_SIZE_64/5)),
+                          weight/5, VEC_N_SIZE_64/5);
+    reduce(temp1, raw_temp);
+    vect_add(temp1, temp1, s, VEC_N_SIZE_64);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(0*(VEC_N_SIZE_64/5)),
+                          a1+(2*(weight/5)), a2+(0*(VEC_N_SIZE_64/5)),
+                          weight/5, VEC_N_SIZE_64/5);
+    reduce(temp2, raw_temp);
+    vect_add(s1, temp1, temp2, VEC_N_SIZE_64);
+    vect_add(o->s0, o->s0, s, VEC_N_SIZE_64);
+    vect_add(o->s2, o->s2, s1, VEC_N_SIZE_64);
+
+    shake_prng(seed, SEED_BYTES);
+    seedexpander_init(&mask_seedexpander, seed, SEED_BYTES);
+    vect_set_random_fixed_weight(&mask_seedexpander, s, weight);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(3*(VEC_N_SIZE_64/5)),
+                          a1+(0*(weight/5)), a2+(3*(VEC_N_SIZE_64/5)),
+                          weight/5, VEC_N_SIZE_64/5);
+    reduce(temp1, raw_temp);
+    vect_add(temp1, temp1, s, VEC_N_SIZE_64);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(0*(VEC_N_SIZE_64/5)),
+                          a1+(3*(weight/5)), a2+(0*(VEC_N_SIZE_64/5)),
+                          weight/5, VEC_N_SIZE_64/5);
+    reduce(temp2, raw_temp);
+    vect_add(s1, temp1, temp2, VEC_N_SIZE_64);
+    vect_add(o->s0, o->s0, s, VEC_N_SIZE_64);
+    vect_add(o->s3, o->s3, s1, VEC_N_SIZE_64);
+
+    shake_prng(seed, SEED_BYTES);
+    seedexpander_init(&mask_seedexpander, seed, SEED_BYTES);
+    vect_set_random_fixed_weight(&mask_seedexpander, s, weight);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(4*(VEC_N_SIZE_64/5)),
+                          a1+(0*(weight/5)), a2+(4*(VEC_N_SIZE_64/5)),
+                          weight/5, VEC_N_SIZE_64 - (VEC_N_SIZE_64/5)*4);
+    reduce(temp1, raw_temp);
+    vect_add(temp1, temp1, s, VEC_N_SIZE_64);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(0*(VEC_N_SIZE_64/5)),
+                          a1+(4*(weight/5)), a2+(0*(VEC_N_SIZE_64/5)),
+                          weight - (weight/5)*4, VEC_N_SIZE_64/5);
+    reduce(temp2, raw_temp);
+    vect_add(s1, temp1, temp2, VEC_N_SIZE_64);
+    vect_add(o->s0, o->s0, s, VEC_N_SIZE_64);
+    vect_add(o->s4, o->s4, s1, VEC_N_SIZE_64);
+
+    shake_prng(seed, SEED_BYTES);
+    seedexpander_init(&mask_seedexpander, seed, SEED_BYTES);
+    vect_set_random_fixed_weight(&mask_seedexpander, s, weight);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(2*(VEC_N_SIZE_64/5)),
+                          a1+(1*(weight/5)), a2+(2*(VEC_N_SIZE_64/5)),
+                          weight/5, VEC_N_SIZE_64/5);
+    reduce(temp1, raw_temp);
+    vect_add(temp1, temp1, s, VEC_N_SIZE_64);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(1*(VEC_N_SIZE_64/5)),
+                          a1+(2*(weight/5)), a2+(1*(VEC_N_SIZE_64/5)),
+                          weight/5, VEC_N_SIZE_64/5);
+    reduce(temp2, raw_temp);
+    vect_add(s1, temp1, temp2, VEC_N_SIZE_64);
+    vect_add(o->s1, o->s1, s, VEC_N_SIZE_64);
+    vect_add(o->s2, o->s2, s1, VEC_N_SIZE_64);
+
+    shake_prng(seed, SEED_BYTES);
+    seedexpander_init(&mask_seedexpander, seed, SEED_BYTES);
+    vect_set_random_fixed_weight(&mask_seedexpander, s, weight);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(3*(VEC_N_SIZE_64/5)),
+                          a1+(1*(weight/5)), a2+(3*(VEC_N_SIZE_64/5)),
+                          weight/5, VEC_N_SIZE_64/5);
+    reduce(temp1, raw_temp);
+    vect_add(temp1, temp1, s, VEC_N_SIZE_64);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(1*(VEC_N_SIZE_64/5)),
+                          a1+(3*(weight/5)), a2+(1*(VEC_N_SIZE_64/5)),
+                          weight/5, VEC_N_SIZE_64/5);
+    reduce(temp2, raw_temp);
+    vect_add(s1, temp1, temp2, VEC_N_SIZE_64);
+    vect_add(o->s1, o->s1, s, VEC_N_SIZE_64);
+    vect_add(o->s3, o->s3, s1, VEC_N_SIZE_64);
+
+    shake_prng(seed, SEED_BYTES);
+    seedexpander_init(&mask_seedexpander, seed, SEED_BYTES);
+    vect_set_random_fixed_weight(&mask_seedexpander, s, weight);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(4*(VEC_N_SIZE_64/5)),
+                          a1+(1*(weight/5)), a2+(4*(VEC_N_SIZE_64/5)),
+                          weight/5, VEC_N_SIZE_64 - (VEC_N_SIZE_64/5)*4);
+    reduce(temp1, raw_temp);
+    vect_add(temp1, temp1, s, VEC_N_SIZE_64);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(1*(VEC_N_SIZE_64/5)),
+                          a1+(4*(weight/5)), a2+(1*(VEC_N_SIZE_64/5)),
+                          weight - (weight/5)*4, VEC_N_SIZE_64/5);
+    reduce(temp2, raw_temp);
+    vect_add(s1, temp1, temp2, VEC_N_SIZE_64);
+    vect_add(o->s1, o->s1, s, VEC_N_SIZE_64);
+    vect_add(o->s4, o->s4, s1, VEC_N_SIZE_64);
+
+    shake_prng(seed, SEED_BYTES);
+    seedexpander_init(&mask_seedexpander, seed, SEED_BYTES);
+    vect_set_random_fixed_weight(&mask_seedexpander, s, weight);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(3*(VEC_N_SIZE_64/5)),
+                          a1+(2*(weight/5)), a2+(3*(VEC_N_SIZE_64/5)),
+                          weight/5, VEC_N_SIZE_64/5);
+    reduce(temp1, raw_temp);
+    vect_add(temp1, temp1, s, VEC_N_SIZE_64);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(2*(VEC_N_SIZE_64/5)),
+                          a1+(3*(weight/5)), a2+(2*(VEC_N_SIZE_64/5)),
+                          weight/5, VEC_N_SIZE_64/5);
+    reduce(temp2, raw_temp);
+    vect_add(s1, temp1, temp2, VEC_N_SIZE_64);
+    vect_add(o->s2, o->s2, s, VEC_N_SIZE_64);
+    vect_add(o->s3, o->s3, s1, VEC_N_SIZE_64);
+
+    shake_prng(seed, SEED_BYTES);
+    seedexpander_init(&mask_seedexpander, seed, SEED_BYTES);
+    vect_set_random_fixed_weight(&mask_seedexpander, s, weight);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(4*(VEC_N_SIZE_64/5)),
+                          a1+(2*(weight/5)), a2+(4*(VEC_N_SIZE_64/5)),
+                          weight/5, VEC_N_SIZE_64 - (VEC_N_SIZE_64/5)*4);
+    reduce(temp1, raw_temp);
+    vect_add(temp1, temp1, s, VEC_N_SIZE_64);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(2*(VEC_N_SIZE_64/5)),
+                          a1+(4*(weight/5)), a2+(2*(VEC_N_SIZE_64/5)),
+                          weight - (weight/5)*4, VEC_N_SIZE_64/5);
+    reduce(temp2, raw_temp);
+    vect_add(s1, temp1, temp2, VEC_N_SIZE_64);
+    vect_add(o->s2, o->s2, s, VEC_N_SIZE_64);
+    vect_add(o->s4, o->s4, s1, VEC_N_SIZE_64);
+
+    shake_prng(seed, SEED_BYTES);
+    seedexpander_init(&mask_seedexpander, seed, SEED_BYTES);
+    vect_set_random_fixed_weight(&mask_seedexpander, s, weight);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(4*(VEC_N_SIZE_64/5)),
+                          a1+(3*(weight/5)), a2+(4*(VEC_N_SIZE_64/5)),
+                          weight/5, VEC_N_SIZE_64 - (VEC_N_SIZE_64/5)*4);
+    reduce(temp1, raw_temp);
+    vect_add(temp1, temp1, s, VEC_N_SIZE_64);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(3*(VEC_N_SIZE_64/5)),
+                          a1+(4*(weight/5)), a2+(3*(VEC_N_SIZE_64/5)),
+                          weight - (weight/5)*4, VEC_N_SIZE_64/5);
+    reduce(temp2, raw_temp);
+    vect_add(s1, temp1, temp2, VEC_N_SIZE_64);
+    vect_add(o->s3, o->s3, s, VEC_N_SIZE_64);
+    vect_add(o->s4, o->s4, s1, VEC_N_SIZE_64);
+#elif MASKS == 6
+    shake_prng(seed, SEED_BYTES);
+    seedexpander_init(&mask_seedexpander, seed, SEED_BYTES);
+    vect_set_random_fixed_weight(&mask_seedexpander, s, weight);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(1*(VEC_N_SIZE_64/6)),
+                          a1+(0*(weight/6)), a2+(1*(VEC_N_SIZE_64/6)),
+                          weight/6, VEC_N_SIZE_64/6);
+    reduce(temp1, raw_temp);
+    vect_add(temp1, temp1, s, VEC_N_SIZE_64);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(0*(VEC_N_SIZE_64/6)),
+                          a1+(1*(weight/6)), a2+(0*(VEC_N_SIZE_64/6)),
+                          weight/6, VEC_N_SIZE_64/6);
+    reduce(temp2, raw_temp);
+    vect_add(s1, temp1, temp2, VEC_N_SIZE_64);
+    vect_add(o->s0, o->s0, s, VEC_N_SIZE_64);
+    vect_add(o->s1, o->s1, s1, VEC_N_SIZE_64);
+
+    shake_prng(seed, SEED_BYTES);
+    seedexpander_init(&mask_seedexpander, seed, SEED_BYTES);
+    vect_set_random_fixed_weight(&mask_seedexpander, s, weight);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(2*(VEC_N_SIZE_64/6)),
+                          a1+(0*(weight/6)), a2+(2*(VEC_N_SIZE_64/6)),
+                          weight/6, VEC_N_SIZE_64/6);
+    reduce(temp1, raw_temp);
+    vect_add(temp1, temp1, s, VEC_N_SIZE_64);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(0*(VEC_N_SIZE_64/6)),
+                          a1+(2*(weight/6)), a2+(0*(VEC_N_SIZE_64/6)),
+                          weight/6, VEC_N_SIZE_64/6);
+    reduce(temp2, raw_temp);
+    vect_add(s1, temp1, temp2, VEC_N_SIZE_64);
+    vect_add(o->s0, o->s0, s, VEC_N_SIZE_64);
+    vect_add(o->s2, o->s2, s1, VEC_N_SIZE_64);
+
+    shake_prng(seed, SEED_BYTES);
+    seedexpander_init(&mask_seedexpander, seed, SEED_BYTES);
+    vect_set_random_fixed_weight(&mask_seedexpander, s, weight);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(3*(VEC_N_SIZE_64/6)),
+                          a1+(0*(weight/6)), a2+(3*(VEC_N_SIZE_64/6)),
+                          weight/6, VEC_N_SIZE_64/6);
+    reduce(temp1, raw_temp);
+    vect_add(temp1, temp1, s, VEC_N_SIZE_64);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(0*(VEC_N_SIZE_64/6)),
+                          a1+(3*(weight/6)), a2+(0*(VEC_N_SIZE_64/6)),
+                          weight/6, VEC_N_SIZE_64/6);
+    reduce(temp2, raw_temp);
+    vect_add(s1, temp1, temp2, VEC_N_SIZE_64);
+    vect_add(o->s0, o->s0, s, VEC_N_SIZE_64);
+    vect_add(o->s3, o->s3, s1, VEC_N_SIZE_64);
+
+    shake_prng(seed, SEED_BYTES);
+    seedexpander_init(&mask_seedexpander, seed, SEED_BYTES);
+    vect_set_random_fixed_weight(&mask_seedexpander, s, weight);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(4*(VEC_N_SIZE_64/6)),
+                          a1+(0*(weight/6)), a2+(4*(VEC_N_SIZE_64/6)),
+                          weight/6, VEC_N_SIZE_64/6);
+    reduce(temp1, raw_temp);
+    vect_add(temp1, temp1, s, VEC_N_SIZE_64);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(0*(VEC_N_SIZE_64/6)),
+                          a1+(4*(weight/6)), a2+(0*(VEC_N_SIZE_64/6)),
+                          weight/6, VEC_N_SIZE_64/6);
+    reduce(temp2, raw_temp);
+    vect_add(s1, temp1, temp2, VEC_N_SIZE_64);
+    vect_add(o->s0, o->s0, s, VEC_N_SIZE_64);
+    vect_add(o->s4, o->s4, s1, VEC_N_SIZE_64);
+
+    shake_prng(seed, SEED_BYTES);
+    seedexpander_init(&mask_seedexpander, seed, SEED_BYTES);
+    vect_set_random_fixed_weight(&mask_seedexpander, s, weight);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(5*(VEC_N_SIZE_64/6)),
+                          a1+(0*(weight/6)), a2+(5*(VEC_N_SIZE_64/6)),
+                          weight/6, VEC_N_SIZE_64 - (VEC_N_SIZE_64/6)*5);
+    reduce(temp1, raw_temp);
+    vect_add(temp1, temp1, s, VEC_N_SIZE_64);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(0*(VEC_N_SIZE_64/6)),
+                          a1+(5*(weight/6)), a2+(0*(VEC_N_SIZE_64/6)),
+                          weight - (weight/6)*5, VEC_N_SIZE_64/6);
+    reduce(temp2, raw_temp);
+    vect_add(s1, temp1, temp2, VEC_N_SIZE_64);
+    vect_add(o->s0, o->s0, s, VEC_N_SIZE_64);
+    vect_add(o->s5, o->s5, s1, VEC_N_SIZE_64);
+
+    shake_prng(seed, SEED_BYTES);
+    seedexpander_init(&mask_seedexpander, seed, SEED_BYTES);
+    vect_set_random_fixed_weight(&mask_seedexpander, s, weight);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(2*(VEC_N_SIZE_64/6)),
+                          a1+(1*(weight/6)), a2+(2*(VEC_N_SIZE_64/6)),
+                          weight/6, VEC_N_SIZE_64/6);
+    reduce(temp1, raw_temp);
+    vect_add(temp1, temp1, s, VEC_N_SIZE_64);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(1*(VEC_N_SIZE_64/6)),
+                          a1+(2*(weight/6)), a2+(1*(VEC_N_SIZE_64/6)),
+                          weight/6, VEC_N_SIZE_64/6);
+    reduce(temp2, raw_temp);
+    vect_add(s1, temp1, temp2, VEC_N_SIZE_64);
+    vect_add(o->s1, o->s1, s, VEC_N_SIZE_64);
+    vect_add(o->s2, o->s2, s1, VEC_N_SIZE_64);
+
+    shake_prng(seed, SEED_BYTES);
+    seedexpander_init(&mask_seedexpander, seed, SEED_BYTES);
+    vect_set_random_fixed_weight(&mask_seedexpander, s, weight);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(3*(VEC_N_SIZE_64/6)),
+                          a1+(1*(weight/6)), a2+(3*(VEC_N_SIZE_64/6)),
+                          weight/6, VEC_N_SIZE_64/6);
+    reduce(temp1, raw_temp);
+    vect_add(temp1, temp1, s, VEC_N_SIZE_64);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(1*(VEC_N_SIZE_64/6)),
+                          a1+(3*(weight/6)), a2+(1*(VEC_N_SIZE_64/6)),
+                          weight/6, VEC_N_SIZE_64/6);
+    reduce(temp2, raw_temp);
+    vect_add(s1, temp1, temp2, VEC_N_SIZE_64);
+    vect_add(o->s1, o->s1, s, VEC_N_SIZE_64);
+    vect_add(o->s3, o->s3, s1, VEC_N_SIZE_64);
+
+    shake_prng(seed, SEED_BYTES);
+    seedexpander_init(&mask_seedexpander, seed, SEED_BYTES);
+    vect_set_random_fixed_weight(&mask_seedexpander, s, weight);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(4*(VEC_N_SIZE_64/6)),
+                          a1+(1*(weight/6)), a2+(4*(VEC_N_SIZE_64/6)),
+                          weight/6, VEC_N_SIZE_64/6);
+    reduce(temp1, raw_temp);
+    vect_add(temp1, temp1, s, VEC_N_SIZE_64);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(1*(VEC_N_SIZE_64/6)),
+                          a1+(4*(weight/6)), a2+(1*(VEC_N_SIZE_64/6)),
+                          weight/6, VEC_N_SIZE_64/6);
+    reduce(temp2, raw_temp);
+    vect_add(s1, temp1, temp2, VEC_N_SIZE_64);
+    vect_add(o->s1, o->s1, s, VEC_N_SIZE_64);
+    vect_add(o->s4, o->s4, s1, VEC_N_SIZE_64);
+
+    shake_prng(seed, SEED_BYTES);
+    seedexpander_init(&mask_seedexpander, seed, SEED_BYTES);
+    vect_set_random_fixed_weight(&mask_seedexpander, s, weight);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(5*(VEC_N_SIZE_64/6)),
+                          a1+(1*(weight/6)), a2+(5*(VEC_N_SIZE_64/6)),
+                          weight/6, VEC_N_SIZE_64 - (VEC_N_SIZE_64/6)*5);
+    reduce(temp1, raw_temp);
+    vect_add(temp1, temp1, s, VEC_N_SIZE_64);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(1*(VEC_N_SIZE_64/6)),
+                          a1+(5*(weight/6)), a2+(1*(VEC_N_SIZE_64/6)),
+                          weight - (weight/6)*5, VEC_N_SIZE_64/6);
+    reduce(temp2, raw_temp);
+    vect_add(s1, temp1, temp2, VEC_N_SIZE_64);
+    vect_add(o->s1, o->s1, s, VEC_N_SIZE_64);
+    vect_add(o->s5, o->s5, s1, VEC_N_SIZE_64);
+
+    shake_prng(seed, SEED_BYTES);
+    seedexpander_init(&mask_seedexpander, seed, SEED_BYTES);
+    vect_set_random_fixed_weight(&mask_seedexpander, s, weight);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(3*(VEC_N_SIZE_64/6)),
+                          a1+(2*(weight/6)), a2+(3*(VEC_N_SIZE_64/6)),
+                          weight/6, VEC_N_SIZE_64/6);
+    reduce(temp1, raw_temp);
+    vect_add(temp1, temp1, s, VEC_N_SIZE_64);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(2*(VEC_N_SIZE_64/6)),
+                          a1+(3*(weight/6)), a2+(2*(VEC_N_SIZE_64/6)),
+                          weight/6, VEC_N_SIZE_64/6);
+    reduce(temp2, raw_temp);
+    vect_add(s1, temp1, temp2, VEC_N_SIZE_64);
+    vect_add(o->s2, o->s2, s, VEC_N_SIZE_64);
+    vect_add(o->s3, o->s3, s1, VEC_N_SIZE_64);
+
+    shake_prng(seed, SEED_BYTES);
+    seedexpander_init(&mask_seedexpander, seed, SEED_BYTES);
+    vect_set_random_fixed_weight(&mask_seedexpander, s, weight);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(4*(VEC_N_SIZE_64/6)),
+                          a1+(2*(weight/6)), a2+(4*(VEC_N_SIZE_64/6)),
+                          weight/6, VEC_N_SIZE_64/6);
+    reduce(temp1, raw_temp);
+    vect_add(temp1, temp1, s, VEC_N_SIZE_64);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(2*(VEC_N_SIZE_64/6)),
+                          a1+(4*(weight/6)), a2+(2*(VEC_N_SIZE_64/6)),
+                          weight/6, VEC_N_SIZE_64/6);
+    reduce(temp2, raw_temp);
+    vect_add(s1, temp1, temp2, VEC_N_SIZE_64);
+    vect_add(o->s2, o->s2, s, VEC_N_SIZE_64);
+    vect_add(o->s4, o->s4, s1, VEC_N_SIZE_64);
+
+    shake_prng(seed, SEED_BYTES);
+    seedexpander_init(&mask_seedexpander, seed, SEED_BYTES);
+    vect_set_random_fixed_weight(&mask_seedexpander, s, weight);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(5*(VEC_N_SIZE_64/6)),
+                          a1+(2*(weight/6)), a2+(5*(VEC_N_SIZE_64/6)),
+                          weight/6, VEC_N_SIZE_64 - (VEC_N_SIZE_64/6)*5);
+    reduce(temp1, raw_temp);
+    vect_add(temp1, temp1, s, VEC_N_SIZE_64);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(2*(VEC_N_SIZE_64/6)),
+                          a1+(5*(weight/6)), a2+(2*(VEC_N_SIZE_64/6)),
+                          weight - (weight/6)*5, VEC_N_SIZE_64/6);
+    reduce(temp2, raw_temp);
+    vect_add(s1, temp1, temp2, VEC_N_SIZE_64);
+    vect_add(o->s2, o->s2, s, VEC_N_SIZE_64);
+    vect_add(o->s5, o->s5, s1, VEC_N_SIZE_64);
+
+    shake_prng(seed, SEED_BYTES);
+    seedexpander_init(&mask_seedexpander, seed, SEED_BYTES);
+    vect_set_random_fixed_weight(&mask_seedexpander, s, weight);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(4*(VEC_N_SIZE_64/6)),
+                          a1+(3*(weight/6)), a2+(4*(VEC_N_SIZE_64/6)),
+                          weight/6, VEC_N_SIZE_64/6);
+    reduce(temp1, raw_temp);
+    vect_add(temp1, temp1, s, VEC_N_SIZE_64);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(3*(VEC_N_SIZE_64/6)),
+                          a1+(4*(weight/6)), a2+(3*(VEC_N_SIZE_64/6)),
+                          weight/6, VEC_N_SIZE_64/6);
+    reduce(temp2, raw_temp);
+    vect_add(s1, temp1, temp2, VEC_N_SIZE_64);
+    vect_add(o->s3, o->s3, s, VEC_N_SIZE_64);
+    vect_add(o->s4, o->s4, s1, VEC_N_SIZE_64);
+
+    shake_prng(seed, SEED_BYTES);
+    seedexpander_init(&mask_seedexpander, seed, SEED_BYTES);
+    vect_set_random_fixed_weight(&mask_seedexpander, s, weight);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(5*(VEC_N_SIZE_64/6)),
+                          a1+(3*(weight/6)), a2+(5*(VEC_N_SIZE_64/6)),
+                          weight/6, VEC_N_SIZE_64 - (VEC_N_SIZE_64/6)*5);
+    reduce(temp1, raw_temp);
+    vect_add(temp1, temp1, s, VEC_N_SIZE_64);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(3*(VEC_N_SIZE_64/6)),
+                          a1+(5*(weight/6)), a2+(3*(VEC_N_SIZE_64/6)),
+                          weight - (weight/6)*5, VEC_N_SIZE_64/6);
+    reduce(temp2, raw_temp);
+    vect_add(s1, temp1, temp2, VEC_N_SIZE_64);
+    vect_add(o->s3, o->s3, s, VEC_N_SIZE_64);
+    vect_add(o->s5, o->s5, s1, VEC_N_SIZE_64);
+
+    shake_prng(seed, SEED_BYTES);
+    seedexpander_init(&mask_seedexpander, seed, SEED_BYTES);
+    vect_set_random_fixed_weight(&mask_seedexpander, s, weight);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(5*(VEC_N_SIZE_64/6)),
+                          a1+(4*(weight/6)), a2+(5*(VEC_N_SIZE_64/6)),
+                          weight/6, VEC_N_SIZE_64 - (VEC_N_SIZE_64/6)*5);
+    reduce(temp1, raw_temp);
+    vect_add(temp1, temp1, s, VEC_N_SIZE_64);
+    memset(raw_temp, 0x00, (VEC_N_SIZE_64*2+1)*8);
+    fast_convolution_mult(raw_temp+(4*(VEC_N_SIZE_64/6)),
+                          a1+(5*(weight/6)), a2+(4*(VEC_N_SIZE_64/6)),
+                          weight - (weight/6)*5, VEC_N_SIZE_64/6);
+    reduce(temp2, raw_temp);
+    vect_add(s1, temp1, temp2, VEC_N_SIZE_64);
+    vect_add(o->s4, o->s4, s, VEC_N_SIZE_64);
+    vect_add(o->s5, o->s5, s1, VEC_N_SIZE_64);
+#endif
 }

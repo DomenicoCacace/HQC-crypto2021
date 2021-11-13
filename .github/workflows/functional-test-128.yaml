@@ -17,46 +17,75 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Configure CMake - 2 shares
+    - name: Configure CMake - 1 shares
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DSECLVL=128 -DMASKLVL=1 -DMODE="FUNCTIONAL" -DCROSSCOMPILE=0 -DVERBOSE=0
-      
+    - name: Make executable - 1 shares
+      run: |
+        cd build/
+        make hqc-128-native
+    - name: Execute functional test - 1 shares
+      run: |
+        cd build/
+        chmod +x hqc-128-native
+        ./hqc-128-native
+
+
+    - name: Configure CMake - 2 shares
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DSECLVL=128 -DMASKLVL=2 -DMODE="FUNCTIONAL" -DCROSSCOMPILE=0 -DVERBOSE=0
     - name: Make executable - 2 shares
       run:  |
         cd build/
         make hqc-128-native
-    
     - name: Execute functional test - 2 shares
       run:  |
         cd build/
         chmod +x hqc-128-native
         ./hqc-128-native
 
+    - name: Configure CMake - 3 shares
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DSECLVL=128 -DMASKLVL=3 -DMODE="FUNCTIONAL" -DCROSSCOMPILE=0 -DVERBOSE=0
+    - name: Make executable - 3 shares
+      run:  |
+        cd build/
+        make hqc-128-native
+    - name: Execute functional test - 3 shares
+      run:  |
+        cd build/
+        chmod +x hqc-128-native
+        ./hqc-128-native
 
     - name: Configure CMake - 4 shares
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DSECLVL=128 -DMASKLVL=2 -DMODE="FUNCTIONAL" -DCROSSCOMPILE=0 -DVERBOSE=0
-
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DSECLVL=128 -DMASKLVL=4 -DMODE="FUNCTIONAL" -DCROSSCOMPILE=0 -DVERBOSE=0
     - name: Make executable - 4 shares
       run: |
         cd build/
         make hqc-128-native
-
     - name: Execute functional test - 4 shares
       run: |
         cd build/
         chmod +x hqc-128-native
         ./hqc-128-native
 
-
-    - name: Configure CMake - 8 shares
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DSECLVL=128 -DMASKLVL=3 -DMODE="FUNCTIONAL" -DCROSSCOMPILE=0 -DVERBOSE=0
-
-    - name: Make executable - 8 shares
+    - name: Configure CMake - 5 shares
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DSECLVL=128 -DMASKLVL=5 -DMODE="FUNCTIONAL" -DCROSSCOMPILE=0 -DVERBOSE=
+    - name: Make executable - 5 shares
       run:  |
         cd build/
         make hqc-128-native
-
-    - name: Execute functional test - 8 shares
+    - name: Execute functional test - 5 shares
       run:  |
+        cd build/
+        chmod +x hqc-128-native
+        ./hqc-128-native
+
+    - name: Configure CMake - 6 shares
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DSECLVL=128 -DMASKLVL=6 -DMODE="FUNCTIONAL" -DCROSSCOMPILE=0 -DVERBOSE=0
+    - name: Make executable - 6 shares
+      run: |
+        cd build/
+        make hqc-128-native
+    - name: Execute functional test - 6 shares
+      run: |
         cd build/
         chmod +x hqc-128-native
         ./hqc-128-native

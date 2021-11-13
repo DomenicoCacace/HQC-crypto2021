@@ -4,10 +4,12 @@
  */
 
 #include <stdint.h>
+#include <stdlib.h>
 
 #include "../codes/code.h"
 #include "../common/parsing.h"
 #include "../common/vector.h"
+#include "../fields/shares.h"
 #include "../fields/gf2x.h"
 #include "hqc.h"
 
@@ -91,9 +93,12 @@ void hqc_pke_encrypt(uint64_t *u, uint64_t *v, uint64_t *m, unsigned char *theta
     uint64_t r1[VEC_N_SIZE_64] = {0};
     uint32_t r2[PARAM_OMEGA_R] = {0};
     uint64_t e[VEC_N_SIZE_64] = {0};
-    uint64_t tmp1[VEC_N_SIZE_64] = {0};
-    uint64_t tmp2[VEC_N_SIZE_64] = {0};
-    uint64_t mask_v[VEC_N_SIZE_64] = {0};
+
+    shares_t tmp1;
+    shares_t tmp2;
+    shares_init(&tmp1);
+    shares_init(&tmp2);
+
 
     // Create seed_expander from theta
     seedexpander_init(&seedexpander, theta, SEED_BYTES);
@@ -113,15 +118,16 @@ void hqc_pke_encrypt(uint64_t *u, uint64_t *v, uint64_t *m, unsigned char *theta
 
     // Compute v = m.G by encoding the message
     code_encode(v, m);
-    vect_resize(tmp1, PARAM_N, v, PARAM_N1N2);
+    shares_resize(&tmp1, v);
 
     // Compute v = m.G + s.r2 + e
-    safe_mul(tmp2, mask_v, r2, s, PARAM_OMEGA_R);
-    vect_add(tmp2, e, tmp2, VEC_N_SIZE_64);
-    vect_add(tmp2, tmp1, tmp2, VEC_N_SIZE_64);
-    vect_add(tmp2, mask_v, tmp2, VEC_N_SIZE_64);
-    vect_resize(v, PARAM_N1N2, tmp2, PARAM_N);
+    safe_mul(&tmp2, r2, s, PARAM_OMEGA_R);
+    shares_add(&tmp2, &tmp1, &tmp2);
+    vect_add(tmp2.s0, e, tmp2.s0, VEC_N_SIZE_64);
 
+
+    shares_reduce(tmp2.s0, &tmp2);
+    vect_resize(v, PARAM_N1N2, tmp2.s0, PARAM_N);
     #ifdef VERBOSE
         printf("\n\nh: "); vect_print(h, VEC_N_SIZE_BYTES);
         printf("\n\ns: "); vect_print(s, VEC_N_SIZE_BYTES);
@@ -150,21 +156,23 @@ void hqc_pke_decrypt(uint64_t *m, const uint64_t *u, const uint64_t *v, const un
     uint64_t x[VEC_N_SIZE_64] = {0};
     uint32_t y[PARAM_OMEGA] = {0};
     uint8_t pk[PUBLIC_KEY_BYTES] = {0};
-    uint64_t tmp1[VEC_N_SIZE_64] = {0};
-    uint64_t tmp2[VEC_N_SIZE_64] = {0};
-    uint64_t mask[VEC_N_SIZE_64];
-
+    shares_t tmp1;
+    shares_t tmp2;
+    shares_init(&tmp1);
+    shares_init(&tmp2);
 
     // Retrieve x, y, pk from secret key
     hqc_secret_key_from_string(x, y, pk, sk);
 
     // Compute v - u.y
-    vect_resize(tmp1, PARAM_N, v, PARAM_N1N2);
-    safe_mul(tmp2, mask, y, u, PARAM_OMEGA);
-    vect_add(tmp2, tmp1, tmp2, VEC_N_SIZE_64);
+    shares_resize(&tmp1, v);
+    safe_mul(&tmp2, y, u, PARAM_OMEGA);
+    shares_add(&tmp2, &tmp1, &tmp2);
 
-    // remove the mask
-    vect_add(tmp2, tmp2, mask, VEC_N_SIZE_64);
+
+    // remove the mask2
+    shares_reduce(tmp2.s0, &tmp2);
+
 
 #ifdef VERBOSE
         printf("\n\nu: "); vect_print(u, VEC_N_SIZE_BYTES);
@@ -174,6 +182,5 @@ void hqc_pke_decrypt(uint64_t *m, const uint64_t *u, const uint64_t *v, const un
     #endif
 
     // Compute m by decoding v - u.y
-    code_decode(m, tmp2);
-
+    code_decode(m, tmp2.s0);
 }

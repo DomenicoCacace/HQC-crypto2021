@@ -47,6 +47,7 @@ set(SOURCES ${SOURCES}
 			${BASE_DIR}/fields/fft.c
 			${BASE_DIR}/fields/gf.c
 			${BASE_DIR}/fields/gf2x.c
+			${BASE_DIR}/fields/shares.c
 			${BASE_DIR}/hqc/hqc.c
 			${BASE_DIR}/hqc/kem.c
 			${BASE_DIR}/common/parsing.c

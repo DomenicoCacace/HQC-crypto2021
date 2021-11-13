@@ -1,20 +1,80 @@
-#define MASKS (1 << MASK_LVL)
+#include <stdint.h>
+#include "../common/parameters.h"
+#include "../common/vector.h"
+#include <string.h>
 
-typedef struct {
-    uint64_t share[MASKS][VEC_N_SIZE_64];
-} shares_t;
+#pragma once
 
-static inline void shares_reduce(shares_t shares, uint64_t *o, uint64_t *mask) {
-    for(int i = 0; i < MASKS; i+=2) {
-        vect_add(o, o, shares.share[i], VEC_N_SIZE_64);
-        vect_add(mask, mask, shares.share[i+1], VEC_N_SIZE_64);
+#define MASKS (MASK_LVL)
 
-    }
+
+#if MASKS == 1
+    typedef struct shares_t {
+        uint64_t s0[VEC_N_SIZE_64];
+    } shares_t;
+#elif MASKS == 2
+    typedef struct {
+        uint64_t s0[VEC_N_SIZE_64];
+        uint64_t s1[VEC_N_SIZE_64];
+    } shares_t;
+#elif MASKS == 3
+typedef struct shares_t {
+        uint64_t s0[VEC_N_SIZE_64];
+        uint64_t s1[VEC_N_SIZE_64];
+        uint64_t s2[VEC_N_SIZE_64];
+    } shares_t;
+#elif MASKS == 4
+    typedef struct shares_t {
+        uint64_t s0[VEC_N_SIZE_64];
+        uint64_t s1[VEC_N_SIZE_64];
+        uint64_t s2[VEC_N_SIZE_64];
+        uint64_t s3[VEC_N_SIZE_64];
+    } shares_t;
+#elif MASKS == 5
+    typedef struct shares_t {
+        uint64_t s0[VEC_N_SIZE_64];
+        uint64_t s1[VEC_N_SIZE_64];
+        uint64_t s2[VEC_N_SIZE_64];
+        uint64_t s3[VEC_N_SIZE_64];
+        uint64_t s4[VEC_N_SIZE_64];
+    } shares_t;
+#elif MASKS == 6
+        typedef struct shares_t {
+        uint64_t s0[VEC_N_SIZE_64];
+        uint64_t s1[VEC_N_SIZE_64];
+        uint64_t s2[VEC_N_SIZE_64];
+        uint64_t s3[VEC_N_SIZE_64];
+        uint64_t s4[VEC_N_SIZE_64];
+        uint64_t s5[VEC_N_SIZE_64];
+    } shares_t;
+#else
+#error TOO_MANY_SHARES
+#endif
+
+void shares_resize(shares_t *shares, const uint64_t *in);
+
+void shares_add(shares_t *o, shares_t *a, shares_t *b);
+
+static inline void shares_init(shares_t *x) {
+    memset(x, 0x00, VEC_N_SIZE_BYTES * MASKS);
 }
-
-static inline uint16_t shares_size(int i, uint16_t weight) {
-    if(i < MASKS-1)
-        return weight/MASKS;
-    return weight - weight/MASKS*i;
+static inline void shares_reduce(uint64_t *o, shares_t *shares) {
+#if MASKS == 1
+    memcpy(o, shares->s0, VEC_N_SIZE_BYTES);
+#elif MASKS == 2
+    for(int i = 0; i < VEC_N_SIZE_64; i++)
+        o[i] = shares->s0[i] ^ shares->s1[i];
+#elif MASKS == 3
+    for(int i = 0; i < VEC_N_SIZE_64; i++)
+        o[i] = shares->s0[i] ^ shares->s1[i] ^ shares->s2[i];
+#elif MASKS == 4
+    for(int i = 0; i < VEC_N_SIZE_64; i++)
+        o[i] = shares->s0[i] ^ shares->s1[i] ^ shares->s2[i] ^ shares->s3[i];
+#elif MASKS == 5
+    for(int i = 0; i < VEC_N_SIZE_64; i++)
+        o[i] = shares->s0[i] ^ shares->s1[i] ^ shares->s2[i] ^ shares->s3[i] ^ shares->s4[i];
+#elif MASKS == 6
+    for(int i = 0; i < VEC_N_SIZE_64; i++)
+        o[i] = shares->s0[i] ^ shares->s1[i] ^ shares->s2[i] ^ shares->s3[i] ^ shares->s4[i] ^ shares->s5[i];
+#endif
 }
-

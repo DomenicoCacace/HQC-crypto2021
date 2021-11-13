@@ -28,11 +28,9 @@ int main() {
 
     uint32_t y[PARAM_OMEGA] = {0};
     seedexpander_state sk_seedexpander;
-
     uint8_t sk_seed[SEED_BYTES] = {0};
-    uint64_t mulres[VEC_N_SIZE_64] = {0};
-    uint64_t mulmask[VEC_N_SIZE_64] = {0};
 
+    shares_t mulres;
 
     // timers declaration
     uint32_t start, end;
@@ -62,7 +60,7 @@ int main() {
         seedexpander_init(&sk_seedexpander, sk_seed, SEED_BYTES);
         vect_set_random_fixed_weight_by_coordinates(&sk_seedexpander, y, PARAM_OMEGA);
         start = rdtsc();
-        safe_mul(mulres, mulmask, y, u, PARAM_OMEGA);
+        safe_mul(&mulres, y, u, PARAM_OMEGA);
         end = rdtsc();
         welford_update(&mul_timer, ((long double) (end - start)));
 
