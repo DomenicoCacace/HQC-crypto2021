@@ -65,27 +65,3 @@ jobs:
           cd build/
           chmod +x hqc-192-native
           ./hqc-192-native
-
-      - name: Configure CMake - 5 shares
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DSECLVL=192 -DMASKLVL=5 -DMODE="FUNCTIONAL" -DCROSSCOMPILE=0 -DVERBOSE=0
-      - name: Make executable - 5 shares
-        run:  |
-          cd build/
-          make hqc-192-native
-      - name: Execute functional test - 5 shares
-        run:  |
-          cd build/
-          chmod +x hqc-192-native
-          ./hqc-192-native
-
-#      - name: Configure CMake - 6 shares
-#        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DSECLVL=192 -DMASKLVL=6 -DMODE="FUNCTIONAL" -DCROSSCOMPILE=0 -DVERBOSE=0
-#      - name: Make executable - 6 shares
-#        run: |
-#          cd build/
-#          make hqc-192-native
-#      - name: Execute functional test - 6 shares
-#        run: |
-#          cd build/
-#          chmod +x hqc-192-native
-#          ./hqc-192-native    

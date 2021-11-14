@@ -30,23 +30,6 @@ typedef struct shares_t {
         uint64_t s2[VEC_N_SIZE_64];
         uint64_t s3[VEC_N_SIZE_64];
     } shares_t;
-#elif MASKS == 5
-    typedef struct shares_t {
-        uint64_t s0[VEC_N_SIZE_64];
-        uint64_t s1[VEC_N_SIZE_64];
-        uint64_t s2[VEC_N_SIZE_64];
-        uint64_t s3[VEC_N_SIZE_64];
-        uint64_t s4[VEC_N_SIZE_64];
-    } shares_t;
-#elif MASKS == 6
-        typedef struct shares_t {
-        uint64_t s0[VEC_N_SIZE_64];
-        uint64_t s1[VEC_N_SIZE_64];
-        uint64_t s2[VEC_N_SIZE_64];
-        uint64_t s3[VEC_N_SIZE_64];
-        uint64_t s4[VEC_N_SIZE_64];
-        uint64_t s5[VEC_N_SIZE_64];
-    } shares_t;
 #else
 #error TOO_MANY_SHARES
 #endif
@@ -70,11 +53,5 @@ static inline void shares_reduce(uint64_t *o, shares_t *shares) {
 #elif MASKS == 4
     for(int i = 0; i < VEC_N_SIZE_64; i++)
         o[i] = shares->s0[i] ^ shares->s1[i] ^ shares->s2[i] ^ shares->s3[i];
-#elif MASKS == 5
-    for(int i = 0; i < VEC_N_SIZE_64; i++)
-        o[i] = shares->s0[i] ^ shares->s1[i] ^ shares->s2[i] ^ shares->s3[i] ^ shares->s4[i];
-#elif MASKS == 6
-    for(int i = 0; i < VEC_N_SIZE_64; i++)
-        o[i] = shares->s0[i] ^ shares->s1[i] ^ shares->s2[i] ^ shares->s3[i] ^ shares->s4[i] ^ shares->s5[i];
 #endif
 }
