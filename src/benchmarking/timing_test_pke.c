@@ -5,7 +5,6 @@
 #include "../lib/shake_ds.h"
 #include "board_config.h"
 #include <stdint.h>
-#include <string.h>
 #include "timing_stats.h"
 #include "../hqc/hqc.h"
 
@@ -28,9 +27,14 @@ int main() {
 
     uint32_t y[PARAM_OMEGA] = {0};
     seedexpander_state sk_seedexpander;
-    uint8_t sk_seed[SEED_BYTES] = {0};
 
     shares_t mulres;
+
+    // "Generate" entropy for the prng
+    uint8_t entropy_input[128];
+    for (int i=0; i<128; i++)
+        entropy_input[i] = i;
+    shake_prng_init(entropy_input, entropy_input, 128, 64);
 
     // timers declaration
     uint32_t start, end;
@@ -56,8 +60,7 @@ int main() {
         end = rdtsc();
         welford_update(&enc_timer, ((long double) (end - start)));
 
-        memcpy(sk_seed, sk, SEED_BYTES);
-        seedexpander_init(&sk_seedexpander, sk_seed, SEED_BYTES);
+        seedexpander_init(&sk_seedexpander, sk, SEED_BYTES);
         vect_set_random_fixed_weight_by_coordinates(&sk_seedexpander, y, PARAM_OMEGA);
         start = rdtsc();
         safe_mul(&mulres, y, u, PARAM_OMEGA);

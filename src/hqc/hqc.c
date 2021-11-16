@@ -4,7 +4,6 @@
  */
 
 #include <stdint.h>
-#include <stdlib.h>
 
 #include "../codes/code.h"
 #include "../common/parsing.h"

@@ -1,5 +1,6 @@
 #include "../common/api.h"
 #include "../common/parameters.h"
+#include "../lib/shake_prng.h"
 #include "board_config.h"
 #include <stdint.h>
 #include "timing_stats.h"
@@ -27,6 +28,11 @@ int main() {
     welford_t encaps_timer, decaps_timer;
     welford_t encaps_timer_0, decaps_timer_0;
 
+    // "Generate" entropy for the prng
+    uint8_t entropy_input[128];
+    for (int i=0; i<128; i++)
+        entropy_input[i] = i;
+    shake_prng_init(entropy_input, entropy_input, 128, 64);
 
     // initialize timers
     welford_init(&encaps_timer_0);

@@ -1,6 +1,4 @@
 #include <string.h>
-#include <stdlib.h>
-#include <stdint-gcc.h>
 #include "../common/api.h"
 #include "../common/parameters.h"
 #include "board_config.h"
@@ -18,10 +16,12 @@ int main() {
     unsigned char key1[SHARED_SECRET_BYTES];
     unsigned char key2[SHARED_SECRET_BYTES];
 
-    uint8_t entropy_input[48];
-    for (int i=0; i<48; i++)
+    // "Generate" entropy for the prng
+    uint8_t entropy_input[128];
+    for (int i=0; i<128; i++)
         entropy_input[i] = i;
-    shake_prng_init(entropy_input, NULL, 48, 0);
+    shake_prng_init(entropy_input, entropy_input, 128, 64);
+
 
     int passed = 0;
 

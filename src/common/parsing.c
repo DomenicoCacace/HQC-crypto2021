@@ -42,10 +42,8 @@ void hqc_secret_key_to_string(uint8_t *sk, const uint8_t *sk_seed, const uint8_t
  */
 void hqc_secret_key_from_string(uint64_t *x, uint32_t *y, uint8_t *pk, const uint8_t *sk) {
     seedexpander_state sk_seedexpander;
-    uint8_t sk_seed[SEED_BYTES] = {0};
 
-    memcpy(sk_seed, sk, SEED_BYTES);
-    seedexpander_init(&sk_seedexpander, sk_seed, SEED_BYTES);
+    seedexpander_init(&sk_seedexpander, sk, SEED_BYTES);
 
     vect_set_random_fixed_weight(&sk_seedexpander, x, PARAM_OMEGA);
     vect_set_random_fixed_weight_by_coordinates(&sk_seedexpander, y, PARAM_OMEGA);
@@ -81,10 +79,8 @@ void hqc_public_key_to_string(uint8_t *pk, const uint8_t *pk_seed, const uint64_
  */
 void hqc_public_key_from_string(uint64_t *h, uint64_t *s, const uint8_t *pk) {
     seedexpander_state pk_seedexpander;
-    uint8_t pk_seed[SEED_BYTES] = {0};
 
-    memcpy(pk_seed, pk, SEED_BYTES);
-    seedexpander_init(&pk_seedexpander, pk_seed, SEED_BYTES);
+    seedexpander_init(&pk_seedexpander, pk, SEED_BYTES);
     vect_set_random(&pk_seedexpander, h);
 
     memcpy(s, pk + SEED_BYTES, VEC_N_SIZE_BYTES);

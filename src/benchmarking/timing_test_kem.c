@@ -16,6 +16,11 @@ int main() {
     unsigned char key1[SHARED_SECRET_BYTES];
     unsigned char key2[SHARED_SECRET_BYTES];
 
+    // "Generate" entropy for the prng
+    uint8_t entropy_input[128];
+    for (int i=0; i<128; i++)
+        entropy_input[i] = i;
+    shake_prng_init(entropy_input, entropy_input, 128, 64);
 
     uint32_t start, end;
     welford_t enc_timer, dec_timer;
