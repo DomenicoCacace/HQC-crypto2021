@@ -1,0 +1,7 @@
+\section{Introduction}
+The security of current public key cryptosystems is based on the \textit{hardness} of some mathematical problems, such as large integer factorization or discrete logarithm extraction; however, such problems could become tractable, thanks to the Shor's algorithm, with the aid of a large scale quantum computer.
+For this reason in 2017 the National Institute of Standards and Technology (NIST) started a procedure for the standardization of cryptographic primitives able to withstand such kind of attacks.
+
+Many proposals, such as Hamming Quasi-Cyclic (HQC), are based on \textit{hard} problems of coding theory; even though, the implementation of the cryptosystem can be vulerable to side channel attacks, that can exploit the information leaked by phisically measurable channels (\textit{e.g.} EM fields, power consumption).
+
+In this paper we make a brief recap of the basics of coding theory and an overview of the cryptosystem. We present a masking scheme suitable for HQC, then implement and benchmark this scheme on an ARM Cortex-M4 microprocessor. 

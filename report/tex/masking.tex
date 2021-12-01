@@ -1,0 +1,45 @@
+\section{Masking}
+An approach used to design countermeasures against side channel attacks consists in applying \textit{secret sharing schemes}~\cite{shamir1979share}. 
+In this scheme, the sensitive data is randomly split into a number of shares, in such a way that to reconstruct any information about the data, a chosen number (\textit{threshold}) of shares are needed.
+In particular, as proven in~\cite{chari1999towards}, a \textit{d-th} order masking scheme (data split into $d+1$ shares) with a threshold of $d+1$ is a sound countermeasure against SCA in a realistic leakage model(~\cite{ishai2003private}).\\
+The basic principle of masking to secure a cryptographic algorithm is to randomly split every sensitive variable $x$ into $d+1$ shares $x_0, \cdots, x_d$, in such a way that the following relation holds:
+\begin{equation*}
+x_0 \oplus x_1 \oplus \cdots \oplus x_d = x
+\end{equation*}
+Ususally the shares $x_1, \cdots, x_d$, also called \textit{masks}, are picked at random, while the \textit{masked variable} $x_0$ is processed in such a way that it satisfies the relation above.
+If the $d$ masks are uniformly distributed, masking makes every intermediate variable statistically independent from the secret, thus disallowing a \textit{d-th} order SCA.
+A \textit{(d+1)-th} SCA could still be feasible, however such attacks become impractical as $d$ increases; as a consequence, the masking order is a security parameter of the cryptosystem.
+
+\subsection*{\textbf{Securing operations}}
+It is fundamental, in order to protect the secrets, to implement mathematical operations in such a way that no valuable information is leaked through some side channel; in ~\cite{ishai2003private} Ishai, Sahai and Wagner proposed an algorithm to securely compute a logic AND gate for any number of shares.
+
+\begin{algorithm}
+    \SetAlgoLined
+    \SetKwFunction{isw_secure_mult}{isw_secure_mult}
+    \KwIn{sharings $(a_1, \cdots, a_d)$, $(b_1, \cdots, b_d)$ $\in \mathds{F}_{2^n}$}
+    \KwOut{sharings $(c_1, \cdots, c_d)$ such that $\bigoplus_i c_i = (\bigoplus_i a_i) \wedge (\bigoplus_i b_i)$}
+    \SetKwProg{Fn}{function}{:}{}
+    \BlankLine
+    \BlankLine
+
+    \For{$i\gets1$ \KwTo$d$}{
+        $c_i = a_i \wedge b_i$
+    }
+
+    \For{$i\gets1$ \KwTo$d$}{
+        \For{$j\gets i+1$ \KwTo$d$}{
+            $s \xleftarrow{\mathdollar} \mathds{F}_{2^n}$\\
+            $s^{'} \gets (s \oplus (a_i \wedge b_j)) \oplus (a_j \wedge b_i)$\\
+            $c_i \gets c_i \oplus s$\\
+            $c_j \gets c_j \oplus s^{'}$    
+        }
+    }
+    \Return$(c_1, \cdots, c_d)$
+    
+    \caption{ISW Multiplication}
+\end{algorithm}
+
+The algorithm above is a generalization of the original one, where shares are elements of the field $\mathds{F}_{2^n}$ and the operations $\oplus$ and $\wedge$ are the bitwise XOR and AND operations on the same field.\\
+The security of this algorithm has been proven secure in~\cite{rivain2010provably} against the probing model and in~\cite{barthe2016strong} against the Strong Non-Interference model.
+
+

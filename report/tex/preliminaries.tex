@@ -1,0 +1,55 @@
+\section{Preliminaries}\label{preliminaries}
+\subsection*{\textbf{General definitions}}
+We denote with $\mathds{F}_{2}$ the binary finite field, with $\mathds{Z}$ the integer ring and with ${\mathcal{V} = \mathds{F}_{2}^{n}}$ a vector space of dimension $n$ over $\mathds{F}_2$ for some positive integer $n \in \mathds{Z}$; 
+elements of $\mathcal{V}$ can be interchangeably considered as row vectors or polynomials in ${\mathcal{R} = \mathds{F}_{2}[X]/(X^n-1)}$.
+Additionally, we denote by $\omega(\cdot)$ the Hamming weight of a vector \textit{i.e.} the number of its non-zero coordinates.
+
+Let ${\mathbf{v} = (v_0, \cdots, v_{n-1}) \in \mathcal{V}}$. The circulant matrix induced by $v$ is defined as
+\begin{equation*}
+    \textbf{rot}(\mathbf{v}) = 
+    \begin{pmatrix}
+        v_0 & v_{n-1} & \cdots & v_1 \\
+        v_1 & v_0 & \cdots & v_2 \\
+        \vdots & \vdots & \ddots & \vdots \\
+        v_{n-1} & v_{n-2} & \cdots & v_0 \\
+    \end{pmatrix}
+    \in \mathds{F}_{2}^{n\times n}
+\end{equation*}
+
+\subsection*{\textbf{Coding theory}\cite{macwilliams1977theory}}
+A linear code $\mathcal{C}$ of length $n$ and dimension $k$ (denoted as $[n, k]$) is a subspace of $\mathcal{V}$ of dimension $k$. Elements of $\mathcal{C}$ are called \textit{codewords}.\\
+
+We say that ${\textbf{G} \in \mathds{F}^{k\times n}_{2}}$ is a generator matrix for the code $\mathcal{C}$ if
+\begin{equation*}
+    \mathcal{C} = \lbrace \textbf{mG}, \text{for } \textbf{m} \in \mathds{F}_2^k \rbrace
+\end{equation*}
+
+Given a $[n, k]$ code $\mathcal{C}$, we say that the matrix ${\mathbf{H}\in\mathds{F}_2^{(n-k)\times n}}$ is a Parity-Check matrix for $\mathcal{C}$ if it is a generator matrix of the dual code $\mathcal{C}^{\bot}$ or, in other words, 
+\begin{equation*}
+\mathcal{C} = \lbrace \mathbf{v} \in \mathds{F}_2^n \text{ such that } \mathbf{Hv^{\top}} = \mathbf{0} \rbrace
+\end{equation*}
+
+Given ${\mathbf{H} \in \mathds{F}_2^{(n-k)\times n}}$ a parity matrix for some code $\mathcal{C}$ and a word ${\mathbf{v} \in \mathds{F}_2^n}$, we call $\mathbf{Hv}^{\top}$ the syndrome of $\mathbf{v}$. From the definition of parity-check matrix, it holds that:
+\begin{equation*}
+    \mathbf{v} \in \mathcal{C} \iff \mathbf{Hv}^{\top} = \mathbf{0}
+\end{equation*}
+
+Given a linear code $\mathcal{C}$ over $\mathcal{V}$ and $\omega$ a norm on $\mathcal{V}$, we define the minimum distance of $\mathcal{C}$ as
+\begin{equation*}
+    d = \min_{\mathbf{u, v} \in \mathcal{C}, \mathbf{u}\neq \mathbf{v}} \omega(\mathbf{u} - \mathbf{v})
+\end{equation*}
+A code with minimum distance $d$ is capable of decoding an arbitrary pattern of up to $\delta = \lfloor \frac{d-1}{2}\rfloor$ errors; such a code is also denoted as $[n, k. d]$.\\
+
+Consider a vector $\mathbf{c} = (\mathbf{c}_0, \cdots, \mathbf{c}_{s-1}) \in \mathds{F}_2^{sn}$ as $s$ successive $n$-uples; a $[sn, k, d]$ linear code $\mathcal{C}$ is said to be Quasi-Cyclic (QC) of order $s$ if, for any $\mathbf{c} = (\mathbf{c}_0, \cdots, \mathbf{c}_{s-1}) \in \mathcal{C}$, the vector obtained by applying a simultaneous circular shift to every block $\mathbf{c}_i$ is also a codeword.
+
+\subsubsection*{Decoding}
+
+When dealing with linear codes, the problem of decoding a vector stays the same when we use the syndrome of the vector, so we speak of Syndrome Decoding (SD).\\
+
+For positive integers $n$, $k$ and $w$ the SD($n, k, w$) distribution \textit{chooses} $\mathbf{H} \xleftarrow{\mathdollar} \mathds{F}_2^{(n-k)\times n}$ and $\mathbf{x} \xleftarrow{\mathdollar} \mathds{F}_2^n$ such that $\omega(\mathbf{x}) = w$ and outputs the couple $(\mathbf{H}, \mathbf{Hx}^{\top})$.\\
+
+On input $(\mathbf{H}, \mathbf{y}^{\top})$ from the SD Distribution, the Syndrome Decoding problem SD($n, k, w$) asks to find a vector $\mathbf{x}$ such that $\mathbf{Hx}^{\top} = \mathbf{y}^{\top}$ and $\omega(\mathbf{x}) = w$; for the Hamming distance this problem has been proven to be NP-complete~\cite{berlekamp1978inherent}.\\
+
+The decisional version of the SDP requires to determine, given $(\mathbf{H}, \mathbf{y}^{\top}) \in \mathds{F}_2^{(n-k)\times n} \times \mathds{F}_2^{(n-k)}$, if $(\mathbf{H}, \mathbf{y}^{\top})$ comes from the SD($n, k, w$) or the uniform distribution over $\mathds{F}_2^{(n-k)\times n} \times \mathds{F}_2^{(n-k)}$; in other words, this is the problem of decoding random linear codes from random errors.
+
+
