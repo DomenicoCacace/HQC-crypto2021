@@ -1,0 +1,8 @@
+\section{Conclusions}
+In this paper we presented the concept of masking to the HQC cryptosystem, in order to obfuscate the secret data during arithmetic operations and thus to reduce the likelihood of success of a side-channel attack.
+
+Our experimental results show that the masked implementation of the multiplication algorithm reduces significantly the probability of success of a timing side-channel attack on all the major functions (encrypt, decrypt, encaps, decaps, multiplication), 
+with a relatively small overhead.
+
+As future work, it is possible to verify on a phisical board the resistance to DPA attacks. Furthermore, it is possible to port this implementation for the \texttt{stm32f4discovery} boards, 
+to test the cryptosystem for higher security levels and to compare the results to the other candidates on the PQM4 project.

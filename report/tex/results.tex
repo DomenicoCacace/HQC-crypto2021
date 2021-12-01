@@ -1,5 +1,7 @@
 \section{Results}
 Our implementation comes with some tools that allow us to test and benchmark the implementation.
+Each of these tools has been compiled with the flags \texttt{-mcpu=cortex-m4 -mthumb -ffunction-sections --fdata-sections -std=c99 -funroll-all-loops -pedantic -O3},
+prioritizing the execution time more than the memory footprint.
 
 \subsubsection*{\textbf{Functional testing}}
 Before testing the performance of the scheme, we need to verify that the cryptosystem works as intended.
@@ -9,7 +11,7 @@ To check this, employ the same source code provided by the authors, checking tha
 \subsubsection*{\textbf{Execution time}}
 In our benchmark we measure the execution time of the primitives of both the KEM and PKE schemes, as well as the multiplication.
 To measure the number of clock cycles needed for each operation, we use the system timer. On a sample of 1000 runs, we get the following results:
-\begin{figure}
+\begin{figure}[H]
     \centering
     \begin{tikzpicture}[scale=0.9]
         \pgfplotsset{every axis/.append style={semithick}, legend style={at={(0,1)},anchor=north west, nodes={scale=0.6, transform shape}}}
@@ -68,7 +70,7 @@ To measure the number of clock cycles needed for each operation, we use the syst
 \end{tikzpicture}%
 \caption{Execution time (clock cycles)}
 \end{figure}
-\begin{table}
+\begin{table}[H]
     \begin{tabular}{llllll}
         \# & encaps & decaps & enc & dec & mul \\ \hline
         2 & 22.55 & 29.88 & 31.57 & 43.62 & 33.58 \\
@@ -77,8 +79,10 @@ To measure the number of clock cycles needed for each operation, we use the syst
     \end{tabular}
     \caption{Percentual performance decrease}
 \end{table}
-As we can observe, the slow down factor introduced by the masking operations is less than 2 for any operation, 
+As we can observe, the overhead factor introduced by the masking operations is less than 2 for any operation, 
 unlike the results obtained for some other cryptosystems (\cite{belaid:hal-02953167,cryptoeprint:2020:733,cryptoeprint:2021:483})
+
+\newpage
 
 \subsubsection*{Constant-time execution}
 To detect an eventual leakage we rely on the \textit{t-test}-based Test Vector Leakage Assessment (TVLA, \cite{schneider2015leakage}): 
@@ -88,7 +92,7 @@ between the two if $|t| < 4.5$.
 For both primitives we precompute keypair and secret message for the fixed measurements, while generating fresh randomness for the masks; we then measure 
 the execution time as for the timing test, and obtain the following results:
 
-\begin{table}
+\begin{table}[H]
     \begin{tabular}{llllll}
         \# & encaps & decaps & enc & dec & mul \\ \hline
         1 & 0.93666 & 4.56649 & 25.66178 & 10.26449 & 30.09420 \\
@@ -100,9 +104,10 @@ the execution time as for the timing test, and obtain the following results:
 \end{table}
 
 We can note how the values tend to decrease for the KEM, PKE and multiplication, hinting that
-by applying masking mechanisms of increasing order the information leakage decreases There are some anomalies in this trend
+by applying masking mechanisms of increasing order the information leakage decreases. There are some anomalies in this trend
 that might be caused by a \textit{bad} initialization of the PRNG; this should be investigated by repeating the tests on a 
 similar board equipped with a TRNG.
+
 
 
 
