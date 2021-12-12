@@ -1,0 +1,6 @@
+\beamer@sectionintoc {1}{Introduction}{2}{0}{1}
+\beamer@sectionintoc {2}{Coding Theory 101}{9}{0}{2}
+\beamer@sectionintoc {3}{Hamming Quasi-Cyclic}{19}{0}{3}
+\beamer@sectionintoc {4}{Masking}{27}{0}{4}
+\beamer@sectionintoc {5}{Implementation}{34}{0}{5}
+\beamer@sectionintoc {6}{Results}{42}{0}{6}

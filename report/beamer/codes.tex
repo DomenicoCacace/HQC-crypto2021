@@ -1,0 +1,138 @@
+\section{Coding Theory 101}
+\begin{frame}
+    \sectionpage
+\end{frame}
+
+\begin{frame}{Codes}
+    Let $\mathcal{V}$ be a vector space of dimension $n$ over $\mathds{F}_2$\footnote{$\mathcal{V}$ is isomorph to the polynomial ring $\mathcal{R} = \mathds{F}_2[X]/(X^n-1)$}.
+    \begin{block}{Linear codes}
+        A \textbf{linear code} $\mathcal{C}$ of length $n$ and dimension $k$ is a
+        vector subspace of $\mathcal{V}$ of size $k$ (such a code is also denoted by $[n, k]$).\\
+        Elements of $\mathcal{C}$ are called \textbf{codewords}.
+    \end{block}
+    \begin{block}{Quasi-cyclic codes}
+        A \textbf{quasi-cyclic code} $\mathcal{C}$ is a linear code $[n, k]$ such that, for $b$ (\textit{index} of the code) coprime with $n$, if $c(x)$ is a codeword 
+        then $x^bc(x) \mod (x^n-1)$ is also a codeword.
+    \end{block}
+\end{frame}
+
+\begin{frame}{Generating the code}
+    Let $\mathcal{C}$ be a $[n, k]$ linear code.
+    \begin{block}{Generator Matrix}
+         A \textbf{generator matrix} of $\mathcal{C}$ is ${\mathbf{G} \in \mathds{F}_{2}^{k\times n}}$ if
+        \begin{equation*}
+            \mathcal{C} = \lbrace \mathbf{mG} ~,~ \mathbf{m} \in \mathds{F}_{2}^{k} \rbrace
+        \end{equation*}       
+    \end{block}
+    \begin{block}{Parity check Matrix}
+        A \textbf{parity check matrix} of $\mathcal{C}$ is ${\mathbf{H} \in \mathds{F}_{2}^{(n-k)\times n}}$ if
+       \begin{equation*}
+           \mathcal{C} = \lbrace \mathbf{v} \in \mathds{F}_2^k ~|~ \mathbf{Hv}^\top = \mathbf{0} \rbrace
+       \end{equation*}       
+   \end{block}
+\end{frame}
+
+\begin{frame}{QC codes properties}
+    \begin{block}{Circulant matrix}
+        Let $\mathbf{v} \in \mathds{F}_2^n = (v_0, \cdots, v_{n-1})$. The circulant matrix induced by $\mathbf{v}$ is defined as:
+        \begin{equation*}
+            \mathbf{rot(v)} = \begin{pmatrix}
+                v_0 & v_{n-1} & \cdots & v_1 \\
+                v_1 & v_0 & \cdots & v_2 \\
+                \vdots & \vdots & \ddots & \vdots \\
+                v_{n-1} & v_{n-2} & \cdots & v_0
+                \end{pmatrix} \in \mathds{F}_2^{n\times n}
+        \end{equation*}
+        A circulant matrix is entirely defined by any of its rows.
+    \end{block}
+\end{frame}
+
+\begin{frame}{QC codes properties}
+    \begin{block}{QC codes parity-check matrix}
+        Let $\mathcal{C}$ be a systematic quasi-cyclic code $[sn, n]$ of index $s$. The parity-check matrix of $\mathcal{C}$ is built as:
+        \begin{equation*}
+            \mathbf{H} =
+            \begin{bmatrix}
+                \mathbf{I}_n & 0 & \cdots & 0 & \mathbf{A}_1 \\
+                0 & \mathbf{I}_n &  & 0 & \mathbf{A}_2 \\
+                \vdots &  & \ddots & 0 & \vdots \\
+                0 & 0 & \cdots  & \mathbf{I}_n & \mathbf{A}_{s-1} 
+                \end{bmatrix}
+        \end{equation*}
+        Where $\mathbf{A}_1, \cdots, \mathbf{A}_{s-1}$ are $n \times n$ circulant matrices.
+    \end{block}
+\end{frame}
+
+\begin{frame}{Dual codes}
+    Let $\mathcal{C}$ be a $[n, k]$ code, $\mathbf{G}$ and $\mathbf{H}$ its generator and parity check matrices, and $\mathbf{v}$ a codeword of $\mathcal{C}$
+        \begin{block}{Dual code}
+            $\mathbf{H}$ is the generator of the dual code $\mathcal{C}^\bot$
+            \begin{columns}
+                \begin{column}{0.45\linewidth}
+                    \begin{equation*}
+                        \mathbf{G} = \begin{bmatrix} I_k ~|~ P \end{bmatrix}
+                    \end{equation*}
+                \end{column}
+                \begin{column}{0.45\linewidth}
+                    \begin{equation*}
+                        \mathbf{H} = \begin{bmatrix} -P^\top ~|~ I_{n-k} \end{bmatrix}
+                    \end{equation*}
+                \end{column}
+            \end{columns}
+        \end{block}
+        \begin{block}{Syndrome}
+            We call \textbf{syndrome} of $\mathbf{v}$ the product $\mathbf{Hv}^\top$. From the definition, we have:
+            \begin{equation*}
+                \mathbf{v} \in \mathcal{C} \Leftrightarrow \mathbf{Hv}^\top = \mathbf{0}
+            \end{equation*}
+        \end{block}
+\end{frame}
+
+\begin{frame}{Metrics}
+    Let $\mathcal{C}$ be a $[n, k]$ code, and $\mathbf{v, w}$ codewords of $\mathcal{C}$
+    \begin{block}{Hamming distance}
+        The \textbf{Hamming distance} between two vectors is the Hamming weight of the difference of the vectors
+        \begin{equation*}
+            d(\mathbf{v, w}) = \omega(\mathbf{v - w})
+        \end{equation*}
+    \end{block}
+    \begin{block}{Minimum distance}
+        The \textbf{minimum distance} of a code is the minimum distance among any couple of codewords
+        \begin{equation*}
+            d_{min} = \min_{\mathbf{v, w} \in \mathcal{C}, \mathbf{v \neq w}} \omega(\mathbf{v-w})
+        \end{equation*}
+    \end{block}
+\end{frame}
+
+\begin{frame}{Decoding a code}
+    \begin{block}{Transmission errors}
+        When travelling on a channel, the original codeword $\mathbf{x}$ might be corrupted, so that the received codeword is 
+        \begin{equation*}
+            \mathbf{y} = \mathbf{x} + \mathbf{e} \text{, with } \mathbf{e} \text{ error vector}
+        \end{equation*}
+        For $\omega(\mathbf{e}) \leq \delta = \lfloor \frac{d_{min} - 1}{2} \rfloor$ we are able to recover the original codeword
+    \end{block}
+\end{frame}
+
+\begin{frame}{Decoding a code}
+    Let $\mathbf{y = x+e}$ be the received codeword
+    \begin{block}{Minimum distance decoding}
+        Pick a codeword $\mathbf{u}$ that minimizes the Hamming distance $d(\mathbf{u, y})$\
+        \begin{equation*}
+            \textsf{Decode}(\mathbf{y}) = \arg\min_{\mathbf{u} \in \mathcal{C}} d(\mathbf{u, y})
+        \end{equation*}
+    \end{block}
+    \begin{block}{Syndrome decoding}
+        By the definition of syndrome of a codeword we have:
+        \begin{equation*}
+            \mathbf{Hy} = \mathbf{H(x+e)} = \mathbf{Hx+He} = \mathbf{0 + He} = \mathbf{He} 
+        \end{equation*}
+    \end{block}
+\end{frame}
+
+\begin{frame}{Hard problems of coding theory}
+    \begin{block}{Syndrome decoding problem~\cite{berlekamp1978inherent}}
+        Given a $[n, k]$ code $\mathcal{C}$ with parity matrix $\mathbf{H}$, the syndrome $\mathbf{y} \in \mathds{F}_2^{n-k}$ and $w \leq n$, find
+        the codeword $\mathbf{x} \in \mathds{F}_2^n$ such that $\mathbf{Hx}^\top = \mathbf{y}^\top$ and $\omega(\mathbf{x}) = w$. 
+    \end{block}
+\end{frame}

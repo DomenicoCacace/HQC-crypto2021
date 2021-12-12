@@ -1,0 +1,45 @@
+\documentclass[tikz]{beamer}
+\setbeamercovered{transparent}
+
+\usetheme[bgphoto]{polimi}
+% Usage instructions can be found at: https://github.com/elauksap/beamerthemepolimi
+
+\usepackage[utf8]{inputenc}
+\usepackage{dsfont}
+\usepackage{mwe}
+\usepackage{amsmath}
+\usepackage[ruled,vlined,linesnumbered]{algorithm2e}
+\usepackage{graphicx}
+\usepackage{mathtools}
+\usepackage{pgfplots}
+
+
+\usetikzlibrary{positioning}
+
+\title{Protecting HQC against differential\\ power analysis attacks\\}
+\subtitle{Cryptography and Architectures for Computer Security project}
+\author{Domenico Cacace}
+\date{\today}
+
+
+\begin{document}
+
+\begin{frame}
+    \maketitle
+\end{frame}
+
+\input{introduction.tex}
+\input{codes.tex}
+\input{hqc.tex}
+\input{masking.tex}
+\input{implementation.tex}
+\input{results.tex}
+
+\begin{frame}[allowframebreaks]
+    \frametitle{References}
+    \bibliographystyle{amsalpha}
+    \bibliography{refs.bib}
+\end{frame}
+
+%\bibliography{refs.bib}
+\end{document}
