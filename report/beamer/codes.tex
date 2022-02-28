@@ -3,16 +3,12 @@
     \sectionpage
 \end{frame}
 
-\begin{frame}{Codes}
-    Let $\mathcal{V}$ be a vector space of dimension $n$ over $\mathds{F}_2$\footnote{$\mathcal{V}$ is isomorph to the polynomial ring $\mathcal{R} = \mathds{F}_2[X]/(X^n-1)$}.
+\begin{frame}{Linear codes}
+    Let $\mathcal{V}$ be a vector space of dimension $n$ over $\mathds{F}_2$.
     \begin{block}{Linear codes}
         A \textbf{linear code} $\mathcal{C}$ of length $n$ and dimension $k$ is a
         vector subspace of $\mathcal{V}$ of size $k$ (such a code is also denoted by $[n, k]$).\\
         Elements of $\mathcal{C}$ are called \textbf{codewords}.
-    \end{block}
-    \begin{block}{Quasi-cyclic codes}
-        A \textbf{quasi-cyclic code} $\mathcal{C}$ is a linear code $[n, k]$ such that, for $b$ (\textit{index} of the code) coprime with $n$, if $c(x)$ is a codeword 
-        then $x^bc(x) \mod (x^n-1)$ is also a codeword.
     \end{block}
 \end{frame}
 
@@ -22,45 +18,15 @@
          A \textbf{generator matrix} of $\mathcal{C}$ is ${\mathbf{G} \in \mathds{F}_{2}^{k\times n}}$ if
         \begin{equation*}
             \mathcal{C} = \lbrace \mathbf{mG} ~,~ \mathbf{m} \in \mathds{F}_{2}^{k} \rbrace
-        \end{equation*}       
+        \end{equation*}   
+        Codewords are linear combinations of the rows of $\mathbf{G}$, so the rows of the generator matrix form a base of the vector subspace $\mathcal{C}$    
     \end{block}
     \begin{block}{Parity check Matrix}
         A \textbf{parity check matrix} of $\mathcal{C}$ is ${\mathbf{H} \in \mathds{F}_{2}^{(n-k)\times n}}$ if
        \begin{equation*}
-           \mathcal{C} = \lbrace \mathbf{v} \in \mathds{F}_2^k ~|~ \mathbf{Hv}^\top = \mathbf{0} \rbrace
+           \mathcal{C} = \lbrace \mathbf{v} \in \mathds{F}_2^n ~|~ \mathbf{Hv}^\top = \mathbf{0} \rbrace
        \end{equation*}       
    \end{block}
-\end{frame}
-
-\begin{frame}{QC codes properties}
-    \begin{block}{Circulant matrix}
-        Let $\mathbf{v} \in \mathds{F}_2^n = (v_0, \cdots, v_{n-1})$. The circulant matrix induced by $\mathbf{v}$ is defined as:
-        \begin{equation*}
-            \mathbf{rot(v)} = \begin{pmatrix}
-                v_0 & v_{n-1} & \cdots & v_1 \\
-                v_1 & v_0 & \cdots & v_2 \\
-                \vdots & \vdots & \ddots & \vdots \\
-                v_{n-1} & v_{n-2} & \cdots & v_0
-                \end{pmatrix} \in \mathds{F}_2^{n\times n}
-        \end{equation*}
-        A circulant matrix is entirely defined by any of its rows.
-    \end{block}
-\end{frame}
-
-\begin{frame}{QC codes properties}
-    \begin{block}{QC codes parity-check matrix}
-        Let $\mathcal{C}$ be a systematic quasi-cyclic code $[sn, n]$ of index $s$. The parity-check matrix of $\mathcal{C}$ is built as:
-        \begin{equation*}
-            \mathbf{H} =
-            \begin{bmatrix}
-                \mathbf{I}_n & 0 & \cdots & 0 & \mathbf{A}_1 \\
-                0 & \mathbf{I}_n &  & 0 & \mathbf{A}_2 \\
-                \vdots &  & \ddots & 0 & \vdots \\
-                0 & 0 & \cdots  & \mathbf{I}_n & \mathbf{A}_{s-1} 
-                \end{bmatrix}
-        \end{equation*}
-        Where $\mathbf{A}_1, \cdots, \mathbf{A}_{s-1}$ are $n \times n$ circulant matrices.
-    \end{block}
 \end{frame}
 
 \begin{frame}{Dual codes}
@@ -88,18 +54,55 @@
         \end{block}
 \end{frame}
 
+\begin{frame}{Circulant Matrices}
+    \begin{block}{Circulant matrix}
+        Let $\mathbf{v} \in \mathds{F}_2^p = (v_0, \cdots, v_{p-1})$. The circulant matrix induced by $\mathbf{v}$ is defined as:
+        \begin{equation*}
+            \mathbf{circ(v)} = \begin{pmatrix}
+                v_0 & v_1 & \cdots & v_{p-1} \\
+                v_{p-1} & v_0 & \cdots & v_{p-2} \\
+                \vdots & \vdots & \ddots & \vdots \\
+                v_1 & v_2 & \cdots & v_0
+                \end{pmatrix} \in \mathds{F}_2^{p\times p}
+        \end{equation*}
+        The algebra of $p \times p$ circulant matrices over $\mathds{F}_2$ is isomorphic to the algebra of polynomials in the ring $\mathds{F}_2[x]/(x^p - 1)$\\
+        \begin{equation*}
+        \mathbf{circ(v)} \simeq v_0 + v_1x^1 + \cdots + v_{p-1}x^{p-1}
+        \end{equation*}
+    \end{block}
+\end{frame}
+
+\begin{frame}{Quasi-cyclic codes}
+    \begin{block}{Quasi-cyclic codes}
+        A \textbf{quasi-cyclic code} $\mathcal{C}$ is a linear code $[n, k]$, with $n = pn_0$ and $k=pk_0$, such that every cyclic shift of a codeword by $n_0$ symbols yields another codeword
+    \end{block}
+    \begin{block}{}
+        A generator matrix $\mathbf{G}$ of the QC-code $\mathcal{C}$ has the form:
+        \begin{equation*}
+            \mathbf{G} = 
+            \begin{bmatrix}
+                C_{1, 1} & C_{1, 2} & \cdots & C_{1, n_0} \\
+                C_{2, 1} & C_{2, 2} & \cdots & C_{2, n_0} \\
+                \vdots & \vdots & \ddots & \vdots \\
+                C_{k_0, 1} & C_{k_0, 2} & \cdots & C_{k_0, n_0}
+                \end{bmatrix} \in \mathds{F}_2^{k \times n}
+        \end{equation*}
+        where each entry $C_{i, j}$ is a $p \times p$ circulant matrix.
+    \end{block}
+\end{frame}
+
 \begin{frame}{Metrics}
     Let $\mathcal{C}$ be a $[n, k]$ code, and $\mathbf{v, w}$ codewords of $\mathcal{C}$
     \begin{block}{Hamming distance}
         The \textbf{Hamming distance} between two vectors is the Hamming weight of the difference of the vectors
         \begin{equation*}
-            d(\mathbf{v, w}) = \omega(\mathbf{v - w})
+            d(\mathbf{v, w}) = \mathtt{wt}(\mathbf{v - w})
         \end{equation*}
     \end{block}
     \begin{block}{Minimum distance}
         The \textbf{minimum distance} of a code is the minimum distance among any couple of codewords
         \begin{equation*}
-            d_{min} = \min_{\mathbf{v, w} \in \mathcal{C}, \mathbf{v \neq w}} \omega(\mathbf{v-w})
+            d_{min} = \min_{\mathbf{v, w} \in \mathcal{C}, \mathbf{v \neq w}} \mathtt{wt}(\mathbf{v-w})
         \end{equation*}
     \end{block}
 \end{frame}
@@ -110,7 +113,7 @@
         \begin{equation*}
             \mathbf{y} = \mathbf{x} + \mathbf{e} \text{, with } \mathbf{e} \text{ error vector}
         \end{equation*}
-        For $\omega(\mathbf{e}) \leq \delta = \lfloor \frac{d_{min} - 1}{2} \rfloor$ we are able to recover the original codeword
+        For $\mathtt{wt}(\mathbf{e}) \leq \delta = \lfloor \frac{d_{min} - 1}{2} \rfloor$ we are able to recover the original codeword
     \end{block}
 \end{frame}
 
@@ -133,6 +136,6 @@
 \begin{frame}{Hard problems of coding theory}
     \begin{block}{Syndrome decoding problem~\cite{berlekamp1978inherent}}
         Given a $[n, k]$ code $\mathcal{C}$ with parity matrix $\mathbf{H}$, the syndrome $\mathbf{y} \in \mathds{F}_2^{n-k}$ and $w \leq n$, find
-        the codeword $\mathbf{x} \in \mathds{F}_2^n$ such that $\mathbf{Hx}^\top = \mathbf{y}^\top$ and $\omega(\mathbf{x}) = w$. 
+        the codeword $\mathbf{x} \in \mathds{F}_2^n$ such that $\mathbf{Hx}^\top = \mathbf{y}^\top$ and $\mathtt{wt}(\mathbf{x}) = w$. 
     \end{block}
 \end{frame}
